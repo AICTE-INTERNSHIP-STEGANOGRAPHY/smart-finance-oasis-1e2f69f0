@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./hooks/useAuth";
+import { CurrencyProvider } from "./hooks/useCurrency";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -13,6 +14,12 @@ import Signup from "./pages/Signup";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Suggestions from "./pages/Suggestions";
+import Earnings from "./pages/Earnings";
+import Expenditures from "./pages/Expenditures";
+import Savings from "./pages/Savings";
+import Goals from "./pages/Goals";
+import Profile from "./pages/Profile";
+import Security from "./pages/Security";
 
 const queryClient = new QueryClient();
 
@@ -24,23 +31,25 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="suggestions" element={<Suggestions />} />
-                <Route path="earnings" element={<Dashboard />} />
-                <Route path="expenditures" element={<Dashboard />} />
-                <Route path="savings" element={<Dashboard />} />
-                <Route path="goals" element={<Dashboard />} />
-                <Route path="profile" element={<Settings />} />
-                <Route path="security" element={<Settings />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <CurrencyProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/" element={<AppLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="suggestions" element={<Suggestions />} />
+                  <Route path="earnings" element={<Earnings />} />
+                  <Route path="expenditures" element={<Expenditures />} />
+                  <Route path="savings" element={<Savings />} />
+                  <Route path="goals" element={<Goals />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="security" element={<Security />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </CurrencyProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

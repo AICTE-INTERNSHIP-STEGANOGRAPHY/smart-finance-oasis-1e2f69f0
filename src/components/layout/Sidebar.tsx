@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,22 +26,11 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
-  const { toast } = useToast();
   
   const handleNavigation = (path: string) => {
     // Close sidebar on mobile when navigating
     if (window.innerWidth < 1024) {
       setIsOpen(false);
-    }
-    
-    // Show a toast for unimplemented pages
-    if (["/earnings", "/expenditures", "/savings", "/goals"].includes(path)) {
-      if (location.pathname !== path) {
-        toast({
-          title: "Page Loaded",
-          description: `Navigated to ${path.replace("/", "").charAt(0).toUpperCase() + path.replace("/", "").slice(1)} page`,
-        });
-      }
     }
   };
 

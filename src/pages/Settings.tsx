@@ -2,8 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrency } from "@/hooks/useCurrency";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -17,6 +19,8 @@ import { ModeToggle } from "@/components/ModeToggle";
 
 export default function Settings() {
   const { requirePassword, setRequirePassword } = useAuth();
+  const { currency, setCurrency } = useCurrency();
+  
   const [notifications, setNotifications] = useState({
     email: true,
     app: true,
@@ -24,6 +28,8 @@ export default function Settings() {
     budgetAlerts: true,
     goalProgress: true,
   });
+  
+  const [selectedCountry, setSelectedCountry] = useState("US");
   
   const handleNotificationChange = (key: keyof typeof notifications) => {
     setNotifications({
@@ -34,6 +40,41 @@ export default function Settings() {
     toast({
       title: "Settings updated",
       description: "Your notification preferences have been saved.",
+    });
+  };
+
+  const handleCurrencyChange = (value: string) => {
+    setCurrency(value);
+    toast({
+      title: "Currency updated",
+      description: `Your currency has been changed to ${value}.`,
+    });
+  };
+  
+  const handleCountryChange = (value: string) => {
+    setSelectedCountry(value);
+    
+    // Automatically set currency based on country
+    switch(value) {
+      case "US": handleCurrencyChange("USD"); break;
+      case "CA": handleCurrencyChange("CAD"); break;
+      case "GB": handleCurrencyChange("GBP"); break;
+      case "EU": handleCurrencyChange("EUR"); break;
+      case "JP": handleCurrencyChange("JPY"); break;
+      case "AU": handleCurrencyChange("AUD"); break;
+      case "IN": handleCurrencyChange("INR"); break;
+      case "CN": handleCurrencyChange("CNY"); break;
+      case "BR": handleCurrencyChange("BRL"); break;
+      case "RU": handleCurrencyChange("RUB"); break;
+      case "ZA": handleCurrencyChange("ZAR"); break;
+      case "NG": handleCurrencyChange("NGN"); break;
+      case "MX": handleCurrencyChange("MXN"); break;
+      default: handleCurrencyChange("USD");
+    }
+    
+    toast({
+      title: "Country updated",
+      description: `Your country has been changed and currency updated accordingly.`,
     });
   };
   
@@ -63,6 +104,80 @@ export default function Settings() {
                 </p>
               </div>
               <ModeToggle />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Location & Currency</CardTitle>
+            <CardDescription>
+              Set your country and currency preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-row items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="country">Country</Label>
+                <p className="text-sm text-muted-foreground">
+                  Select your country of residence
+                </p>
+              </div>
+              <Select
+                value={selectedCountry}
+                onValueChange={handleCountryChange}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="US">United States</SelectItem>
+                  <SelectItem value="CA">Canada</SelectItem>
+                  <SelectItem value="GB">United Kingdom</SelectItem>
+                  <SelectItem value="EU">European Union</SelectItem>
+                  <SelectItem value="AU">Australia</SelectItem>
+                  <SelectItem value="JP">Japan</SelectItem>
+                  <SelectItem value="IN">India</SelectItem>
+                  <SelectItem value="CN">China</SelectItem>
+                  <SelectItem value="BR">Brazil</SelectItem>
+                  <SelectItem value="RU">Russia</SelectItem>
+                  <SelectItem value="ZA">South Africa</SelectItem>
+                  <SelectItem value="NG">Nigeria</SelectItem>
+                  <SelectItem value="MX">Mexico</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex flex-row items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="currency">Currency</Label>
+                <p className="text-sm text-muted-foreground">
+                  Select your preferred currency
+                </p>
+              </div>
+              <Select
+                value={currency}
+                onValueChange={handleCurrencyChange}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">US Dollar ($)</SelectItem>
+                  <SelectItem value="EUR">Euro (€)</SelectItem>
+                  <SelectItem value="GBP">British Pound (£)</SelectItem>
+                  <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
+                  <SelectItem value="CAD">Canadian Dollar (C$)</SelectItem>
+                  <SelectItem value="AUD">Australian Dollar (A$)</SelectItem>
+                  <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
+                  <SelectItem value="CNY">Chinese Yuan (¥)</SelectItem>
+                  <SelectItem value="BRL">Brazilian Real (R$)</SelectItem>
+                  <SelectItem value="RUB">Russian Ruble (₽)</SelectItem>
+                  <SelectItem value="ZAR">South African Rand (R)</SelectItem>
+                  <SelectItem value="NGN">Nigerian Naira (₦)</SelectItem>
+                  <SelectItem value="MXN">Mexican Peso (Mex$)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
