@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Home,
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,6 +27,24 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
+  const { toast } = useToast();
+  
+  const handleNavigation = (path: string) => {
+    // Close sidebar on mobile when navigating
+    if (window.innerWidth < 1024) {
+      setIsOpen(false);
+    }
+    
+    // Show a toast for unimplemented pages
+    if (["/earnings", "/expenditures", "/savings", "/goals"].includes(path)) {
+      if (location.pathname !== path) {
+        toast({
+          title: "Page Loaded",
+          description: `Navigated to ${path.replace("/", "").charAt(0).toUpperCase() + path.replace("/", "").slice(1)} page`,
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -46,7 +64,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         )}
       >
         <div className="flex h-16 items-center border-b px-6">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
+          <Link to="/" className="flex items-center gap-2 font-semibold" onClick={() => handleNavigation("/")}>
             <DollarSign className="h-6 w-6 text-primary" />
             <span className="text-xl">Finance Oasis</span>
           </Link>
@@ -65,7 +83,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/" className="menu-item">
+                  <Link to="/" className="menu-item" onClick={() => handleNavigation("/")}>
                     <Home className="h-4 w-4" />
                     Home
                   </Link>
@@ -84,7 +102,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/earnings" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/earnings" className="menu-item">
+                  <Link to="/earnings" className="menu-item" onClick={() => handleNavigation("/earnings")}>
                     <TrendingUp className="h-4 w-4" />
                     Earnings
                   </Link>
@@ -98,7 +116,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/expenditures" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/expenditures" className="menu-item">
+                  <Link to="/expenditures" className="menu-item" onClick={() => handleNavigation("/expenditures")}>
                     <CreditCard className="h-4 w-4" />
                     Expenditures
                   </Link>
@@ -112,7 +130,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/savings" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/savings" className="menu-item">
+                  <Link to="/savings" className="menu-item" onClick={() => handleNavigation("/savings")}>
                     <Wallet className="h-4 w-4" />
                     Savings
                   </Link>
@@ -126,7 +144,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/goals" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/goals" className="menu-item">
+                  <Link to="/goals" className="menu-item" onClick={() => handleNavigation("/goals")}>
                     <CalendarCheck className="h-4 w-4" />
                     Personal Goals
                   </Link>
@@ -145,7 +163,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/suggestions" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/suggestions" className="menu-item">
+                  <Link to="/suggestions" className="menu-item" onClick={() => handleNavigation("/suggestions")}>
                     <PieChart className="h-4 w-4" />
                     Suggestions
                   </Link>
@@ -164,7 +182,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/profile" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/profile" className="menu-item">
+                  <Link to="/profile" className="menu-item" onClick={() => handleNavigation("/profile")}>
                     <User className="h-4 w-4" />
                     Profile
                   </Link>
@@ -178,7 +196,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/security" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/security" className="menu-item">
+                  <Link to="/security" className="menu-item" onClick={() => handleNavigation("/security")}>
                     <Shield className="h-4 w-4" />
                     Security
                   </Link>
@@ -192,7 +210,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     location.pathname === "/settings" && "bg-accent font-medium"
                   )}
                 >
-                  <Link to="/settings" className="menu-item">
+                  <Link to="/settings" className="menu-item" onClick={() => handleNavigation("/settings")}>
                     <Settings className="h-4 w-4" />
                     Settings
                   </Link>

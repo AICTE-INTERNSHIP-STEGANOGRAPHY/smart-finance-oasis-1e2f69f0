@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./hooks/useAuth";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -31,13 +31,13 @@ const App = () => (
                 <Route index element={<Dashboard />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="suggestions" element={<Suggestions />} />
-                {/* These are placeholders and would be implemented in future updates */}
                 <Route path="earnings" element={<Dashboard />} />
                 <Route path="expenditures" element={<Dashboard />} />
                 <Route path="savings" element={<Dashboard />} />
                 <Route path="goals" element={<Dashboard />} />
                 <Route path="profile" element={<Settings />} />
                 <Route path="security" element={<Settings />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

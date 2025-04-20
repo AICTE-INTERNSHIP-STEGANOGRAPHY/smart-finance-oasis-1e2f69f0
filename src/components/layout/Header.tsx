@@ -11,9 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ModeToggle } from "../ModeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -21,7 +23,23 @@ interface HeaderProps {
 
 export function Header({ toggleSidebar }: HeaderProps) {
   const { user, signOut } = useAuth();
+  const [searchValue, setSearchValue] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      toast({
+        title: "Search initiated",
+        description: `Searching for "${searchValue}"`,
+      });
+      // In a real app, this would trigger a search function
+      console.log("Searching for:", searchValue);
+    }
+    setSearchValue("");
+    setSearchOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -39,17 +57,22 @@ export function Header({ toggleSidebar }: HeaderProps) {
       <h1 className="text-lg font-semibold md:text-xl">Smart Finance Oasis</h1>
       
       <div className="ml-auto flex items-center gap-2">
-        <div className={`transition-all duration-300 ${searchOpen ? "w-64" : "w-0"} overflow-hidden`}>
+        <form 
+          onSubmit={handleSearch} 
+          className={`transition-all duration-300 ${searchOpen ? "w-64" : "w-0"} overflow-hidden`}
+        >
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
               className="w-full pl-8"
-              onBlur={() => setSearchOpen(false)}
+              onBlur={() => !searchValue && setSearchOpen(false)}
             />
           </div>
-        </div>
+        </form>
         
         <Button
           variant="ghost"
@@ -81,8 +104,12 @@ export function Header({ toggleSidebar }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/profile">Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/settings">Settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
