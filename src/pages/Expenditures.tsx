@@ -1,14 +1,15 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { BarChart, CreditCard, PieChart, Wallet, AlertCircle } from "lucide-react";
+import { BarChart, CreditCard, PieChart, Wallet, AlertCircle, Plus, Trash2, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency, formatMoney } from "@/hooks/useCurrency";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type Expense = {
   id: string;
@@ -38,19 +39,27 @@ export default function Expenditures() {
     limit: 0
   });
   
-  const categories = [
-    { value: "food", label: "Food & Dining" },
-    { value: "clothing", label: "Clothes & Footwear" },
-    { value: "rent", label: "Rent & Housing" },
-    { value: "utilities", label: "Utilities & Bills" },
-    { value: "entertainment", label: "Entertainment" },
-    { value: "travel", label: "Travel" },
-    { value: "health", label: "Health & Medical" },
-    { value: "education", label: "Education" },
-    { value: "misc", label: "Miscellaneous" }
-  ];
+  const [categories, setCategories] = useState<Array<{value: string, label: string}>>(() => {
+    const savedCategories = localStorage.getItem("expenseCategories");
+    return savedCategories ? JSON.parse(savedCategories) : [
+      { value: "food", label: "Food & Dining" },
+      { value: "clothing", label: "Clothes & Footwear" },
+      { value: "rent", label: "Rent & Housing" },
+      { value: "utilities", label: "Utilities & Bills" },
+      { value: "entertainment", label: "Entertainment" },
+      { value: "travel", label: "Travel" },
+      { value: "health", label: "Health & Medical" },
+      { value: "education", label: "Education" },
+      { value: "misc", label: "Miscellaneous" }
+    ];
+  });
   
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ value: "", label: "" });
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
   const handleAddExpense = () => {
     if (!newExpense.name || newExpense.amount <= 0) {
@@ -64,15 +73,46 @@ export default function Expenditures() {
     
     setIsLoading(true);
     
-    const expense: Expense = {
-      ...newExpense,
-      id: crypto.randomUUID(),
-      exceedsLimit: newExpense.limit ? newExpense.amount > newExpense.limit : false
-    };
+    let expense: Expense;
     
-    const updatedExpenses = [...expenses, expense];
-    setExpenses(updatedExpenses);
-    localStorage.setItem("userExpenses", JSON.stringify(updatedExpenses));
+    if (editingExpenseId) {
+      // Update existing expense
+      const updatedExpenses = expenses.map(exp => 
+        exp.id === editingExpenseId 
+          ? {
+              ...newExpense, 
+              id: editingExpenseId,
+              exceedsLimit: newExpense.limit ? newExpense.amount > newExpense.limit : false
+            }
+          : exp
+      );
+      
+      setExpenses(updatedExpenses);
+      localStorage.setItem("userExpenses", JSON.stringify(updatedExpenses));
+      
+      expense = updatedExpenses.find(exp => exp.id === editingExpenseId)!;
+      
+      toast({
+        title: "Expense updated",
+        description: "Your expense has been successfully updated."
+      });
+    } else {
+      // Add new expense
+      expense = {
+        ...newExpense,
+        id: crypto.randomUUID(),
+        exceedsLimit: newExpense.limit ? newExpense.amount > newExpense.limit : false
+      };
+      
+      const updatedExpenses = [...expenses, expense];
+      setExpenses(updatedExpenses);
+      localStorage.setItem("userExpenses", JSON.stringify(updatedExpenses));
+      
+      toast({
+        title: "Expense added",
+        description: "Your expense has been successfully recorded."
+      });
+    }
     
     // Store in notifications if limit exceeded
     if (expense.exceedsLimit) {
@@ -98,6 +138,11 @@ export default function Expenditures() {
     
     setIsLoading(false);
     setIsExpenseDialogOpen(false);
+    setEditingExpenseId(null);
+    resetExpenseForm();
+  };
+  
+  const resetExpenseForm = () => {
     setNewExpense({
       name: "",
       amount: 0,
@@ -106,11 +151,73 @@ export default function Expenditures() {
       notes: "",
       limit: 0
     });
+  };
+  
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpenseId(expense.id);
+    setNewExpense({
+      name: expense.name,
+      amount: expense.amount,
+      category: expense.category,
+      date: expense.date,
+      notes: expense.notes || "",
+      limit: expense.limit || 0
+    });
+    setIsExpenseDialogOpen(true);
+  };
+  
+  const handleDeleteExpense = (id: string) => {
+    setSelectedExpenseId(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteExpense = () => {
+    if (selectedExpenseId) {
+      const updatedExpenses = expenses.filter(expense => expense.id !== selectedExpenseId);
+      setExpenses(updatedExpenses);
+      localStorage.setItem("userExpenses", JSON.stringify(updatedExpenses));
+      
+      toast({
+        title: "Expense deleted",
+        description: "The expense has been removed."
+      });
+      
+      setIsDeleteDialogOpen(false);
+      setSelectedExpenseId(null);
+    }
+  };
+  
+  const handleAddCategory = () => {
+    if (!newCategory.value || !newCategory.label) {
+      toast({
+        title: "Invalid category",
+        description: "Please provide both a value and label for the category.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if category already exists
+    if (categories.some(cat => cat.value === newCategory.value)) {
+      toast({
+        title: "Category already exists",
+        description: "A category with this value already exists.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedCategories = [...categories, newCategory];
+    setCategories(updatedCategories);
+    localStorage.setItem("expenseCategories", JSON.stringify(updatedCategories));
     
     toast({
-      title: "Expense added",
-      description: "Your expense has been successfully recorded."
+      title: "Category added",
+      description: "Your new expense category has been added."
     });
+    
+    setNewCategory({ value: "", label: "" });
+    setIsCategoryDialogOpen(false);
   };
   
   const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -191,9 +298,14 @@ export default function Expenditures() {
       
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-full">
-          <CardHeader>
-            <CardTitle>Expenses Management</CardTitle>
-            <CardDescription>Track, add, and manage your expenses</CardDescription>
+          <CardHeader className="flex justify-between">
+            <div>
+              <CardTitle>Expenses Management</CardTitle>
+              <CardDescription>Track, add, and manage your expenses</CardDescription>
+            </div>
+            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
+              Manage Categories
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {expenses.length > 0 ? (
@@ -207,13 +319,13 @@ export default function Expenditures() {
                         expense.exceedsLimit ? "bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800" : "bg-muted"
                       }`}
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium">{expense.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {categories.find(cat => cat.value === expense.category)?.label} • {new Date(expense.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right mr-4">
                         <p className={`font-bold ${expense.exceedsLimit ? "text-red-600 dark:text-red-400" : ""}`}>
                           {formatMoney(expense.amount, currency)}
                         </p>
@@ -222,6 +334,14 @@ export default function Expenditures() {
                             Limit: {formatMoney(expense.limit, currency)}
                           </p>
                         )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditExpense(expense)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteExpense(expense.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -234,11 +354,13 @@ export default function Expenditures() {
           <CardFooter>
             <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
               <DialogTrigger asChild>
-                <Button>Add Expense</Button>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" /> Add Expense
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Add New Expense</DialogTitle>
+                  <DialogTitle>{editingExpenseId ? "Edit Expense" : "Add New Expense"}</DialogTitle>
                   <DialogDescription>
                     Enter the details of your expense below
                   </DialogDescription>
@@ -267,7 +389,7 @@ export default function Expenditures() {
                         id="amount"
                         type="number"
                         value={newExpense.amount}
-                        onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value)})}
+                        onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value) || 0})}
                         className="pl-8"
                       />
                     </div>
@@ -343,7 +465,81 @@ export default function Expenditures() {
                 </div>
                 <DialogFooter>
                   <Button type="submit" onClick={handleAddExpense} disabled={isLoading}>
-                    {isLoading ? "Adding..." : "Add Expense"}
+                    {isLoading ? "Saving..." : (editingExpenseId ? "Save Changes" : "Add Expense")}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the selected expense.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDeleteExpense} className="bg-destructive text-destructive-foreground">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Manage Expense Categories</DialogTitle>
+                  <DialogDescription>
+                    Add or modify expense categories
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Current Categories</h3>
+                    <div className="grid gap-2">
+                      {categories.map((category) => (
+                        <div key={category.value} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                          <span>{category.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Add New Category</h3>
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-4 items-center gap-2">
+                        <Label htmlFor="categoryValue" className="text-right text-xs">
+                          Value
+                        </Label>
+                        <Input
+                          id="categoryValue"
+                          value={newCategory.value}
+                          onChange={(e) => setNewCategory({...newCategory, value: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                          className="col-span-3"
+                          placeholder="e.g. groceries"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-2">
+                        <Label htmlFor="categoryLabel" className="text-right text-xs">
+                          Label
+                        </Label>
+                        <Input
+                          id="categoryLabel"
+                          value={newCategory.label}
+                          onChange={(e) => setNewCategory({...newCategory, label: e.target.value})}
+                          className="col-span-3"
+                          placeholder="e.g. Grocery Shopping"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleAddCategory}>
+                    Add Category
                   </Button>
                 </DialogFooter>
               </DialogContent>

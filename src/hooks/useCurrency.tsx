@@ -5,32 +5,35 @@ type CurrencyContextType = {
   currency: string;
   currencySymbol: string;
   setCurrency: (currency: string) => void;
+  availableCurrencies: Array<{code: string, name: string, symbol: string}>;
 };
 
 type CurrencyProviderProps = {
   children: ReactNode;
 };
 
-type CurrencySymbols = {
-  [key: string]: string;
-};
+// Currency definitions with symbols and names
+const currencyDefinitions = [
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "EUR", name: "Euro", symbol: "€" },
+  { code: "GBP", name: "British Pound", symbol: "£" },
+  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+  { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
+  { code: "INR", name: "Indian Rupee", symbol: "₹" },
+  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+  { code: "RUB", name: "Russian Ruble", symbol: "₽" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
+  { code: "NGN", name: "Nigerian Naira", symbol: "₦" },
+  { code: "MXN", name: "Mexican Peso", symbol: "Mex$" },
+];
 
-// Map of currency codes to symbols
-const currencySymbols: CurrencySymbols = {
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  JPY: "¥",
-  CNY: "¥",
-  INR: "₹",
-  CAD: "C$",
-  AUD: "A$",
-  BRL: "R$",
-  RUB: "₽",
-  ZAR: "R",
-  NGN: "₦",
-  MXN: "Mex$",
-};
+// Map of currency codes to symbols for quick lookup
+const currencySymbols: Record<string, string> = currencyDefinitions.reduce((acc, curr) => {
+  acc[curr.code] = curr.symbol;
+  return acc;
+}, {} as Record<string, string>);
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
@@ -45,6 +48,21 @@ export const CurrencyProvider = ({ children }: CurrencyProviderProps) => {
     setCurrencyState(newCurrency);
     // Save to localStorage
     localStorage.setItem("userCurrency", newCurrency);
+    
+    // Create notification when currency is changed
+    const notification = {
+      id: crypto.randomUUID(),
+      type: "success",
+      title: "Currency Updated",
+      description: `Your currency has been set to ${newCurrency}. All financial values will now be displayed in this currency.`,
+      date: new Date().toISOString(),
+      read: false
+    };
+    
+    const savedNotifications = localStorage.getItem("userNotifications") || "[]";
+    const notifications = JSON.parse(savedNotifications);
+    notifications.push(notification);
+    localStorage.setItem("userNotifications", JSON.stringify(notifications));
   };
 
   // Initialize from localStorage on mount
@@ -59,6 +77,7 @@ export const CurrencyProvider = ({ children }: CurrencyProviderProps) => {
     currency,
     currencySymbol: currencySymbols[currency] || "$",
     setCurrency: updateCurrency,
+    availableCurrencies: currencyDefinitions
   };
 
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
@@ -74,12 +93,17 @@ export const useCurrency = (): CurrencyContextType => {
 
 // Utility function to format money based on selected currency
 export const formatMoney = (amount: number, currency: string): string => {
-  const symbol = currencySymbols[currency] || "$";
-  
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (error) {
+    console.error("Error formatting currency:", error);
+    // Fallback to a basic format
+    const symbol = currencySymbols[currency] || "$";
+    return `${symbol}${amount.toFixed(2)}`;
+  }
 };

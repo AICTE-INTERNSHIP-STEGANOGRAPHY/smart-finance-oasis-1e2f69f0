@@ -1,122 +1,81 @@
+
 import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { useCurrency } from "@/hooks/useCurrency";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ModeToggle } from "@/components/ModeToggle";
+import { useCurrency } from "@/hooks/useCurrency";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Settings() {
-  const { requirePassword, setRequirePassword } = useAuth();
-  const { currency, setCurrency } = useCurrency();
-  
-  const [notifications, setNotifications] = useState({
-    email: true,
-    app: true,
-    weeklyReport: true,
-    budgetAlerts: true,
-    goalProgress: true,
+  const { currency, setCurrency, availableCurrencies } = useCurrency();
+  const [selectedCurrency, setSelectedCurrency] = useState(currency);
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem("darkMode");
+    return savedMode ? savedMode === "true" : window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
-  
-  const [selectedCountry, setSelectedCountry] = useState("US");
-  
+  const [notifications, setNotifications] = useState(() => {
+    const savedPref = localStorage.getItem("notificationsEnabled");
+    return savedPref ? savedPref === "true" : true;
+  });
+  const [emailFrequency, setEmailFrequency] = useState(() => {
+    const savedFreq = localStorage.getItem("emailFrequency");
+    return savedFreq || "weekly";
+  });
+  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
+  const [testCurrency, setTestCurrency] = useState("");
+  const [testAmount, setTestAmount] = useState(1000);
+
   useEffect(() => {
-    const savedNotifications = localStorage.getItem("notificationPreferences");
-    if (savedNotifications) {
-      setNotifications(JSON.parse(savedNotifications));
+    // Update the document class when dark mode changes
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
-    
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      const { country } = JSON.parse(savedProfile);
-      if (country) setSelectedCountry(country);
-    }
-  }, []);
-  
-  const handleNotificationChange = (key: keyof typeof notifications) => {
-    const updatedNotifications = {
-      ...notifications,
-      [key]: !notifications[key],
-    };
-    
-    setNotifications(updatedNotifications);
-    localStorage.setItem("notificationPreferences", JSON.stringify(updatedNotifications));
-    
-    toast({
-      title: "Settings updated",
-      description: "Your notification preferences have been saved.",
-    });
+    localStorage.setItem("darkMode", String(darkMode));
+  }, [darkMode]);
+
+  const handleToggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
   };
 
-  const handleCurrencyChange = (value: string) => {
-    setCurrency(value);
-    
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      const profileData = JSON.parse(savedProfile);
-      profileData.currency = value;
-      localStorage.setItem("userProfile", JSON.stringify(profileData));
-    }
-    
-    toast({
-      title: "Currency updated",
-      description: `Your currency has been changed to ${value}.`,
-    });
+  const handleToggleNotifications = () => {
+    setNotifications((prev) => !prev);
   };
-  
-  const handleCountryChange = (value: string) => {
-    setSelectedCountry(value);
+
+  const handleSavePreferences = () => {
+    // Save all preferences to localStorage
+    localStorage.setItem("notificationsEnabled", String(notifications));
+    localStorage.setItem("emailFrequency", emailFrequency);
     
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      const profileData = JSON.parse(savedProfile);
-      profileData.country = value;
-      localStorage.setItem("userProfile", JSON.stringify(profileData));
+    // Update currency if changed
+    if (selectedCurrency !== currency) {
+      setCurrency(selectedCurrency);
     }
-    
-    switch(value) {
-      case "US": handleCurrencyChange("USD"); break;
-      case "CA": handleCurrencyChange("CAD"); break;
-      case "GB": handleCurrencyChange("GBP"); break;
-      case "EU": handleCurrencyChange("EUR"); break;
-      case "JP": handleCurrencyChange("JPY"); break;
-      case "AU": handleCurrencyChange("AUD"); break;
-      case "IN": handleCurrencyChange("INR"); break;
-      case "CN": handleCurrencyChange("CNY"); break;
-      case "BR": handleCurrencyChange("BRL"); break;
-      case "RU": handleCurrencyChange("RUB"); break;
-      case "ZA": handleCurrencyChange("ZAR"); break;
-      case "NG": handleCurrencyChange("NGN"); break;
-      case "MX": handleCurrencyChange("MXN"); break;
-      default: handleCurrencyChange("USD");
-    }
-    
-    toast({
-      title: "Country updated",
-      description: `Your country has been changed and currency updated accordingly.`,
-    });
-  };
-  
-  const saveSettings = () => {
-    localStorage.setItem("notificationPreferences", JSON.stringify(notifications));
-    setRequirePassword(requirePassword);
     
     toast({
       title: "Settings saved",
-      description: "All your settings have been successfully saved.",
+      description: "Your preferences have been updated successfully."
     });
   };
   
+  const getFormattedExample = (code: string, amount: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch (error) {
+      return `${code} ${amount.toFixed(2)}`;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -125,8 +84,103 @@ export default function Settings() {
           Manage your account settings and preferences
         </p>
       </div>
-      
-      <div className="grid gap-6">
+
+      <div className="grid gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Currency Settings</CardTitle>
+            <CardDescription>
+              Choose the currency for displaying all financial values
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select
+                value={selectedCurrency}
+                onValueChange={setSelectedCurrency}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Available Currencies</SelectLabel>
+                    {availableCurrencies.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code}>
+                        {curr.code} - {curr.name} ({curr.symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              
+              <p className="text-sm text-muted-foreground mt-2">
+                Example: {getFormattedExample(selectedCurrency, 1234.56)}
+              </p>
+              
+              <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="mt-2">
+                    Test Currency Formatting
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Test Currency Formatting</DialogTitle>
+                    <DialogDescription>
+                      See how different currencies format the same amount
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="test-currency" className="text-right">
+                        Currency
+                      </Label>
+                      <Select
+                        value={testCurrency || selectedCurrency}
+                        onValueChange={setTestCurrency}
+                      >
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select a currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Available Currencies</SelectLabel>
+                            {availableCurrencies.map((curr) => (
+                              <SelectItem key={curr.code} value={curr.code}>
+                                {curr.code} - {curr.name} ({curr.symbol})
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="test-amount" className="text-right">
+                        Amount
+                      </Label>
+                      <Input
+                        id="test-amount"
+                        type="number"
+                        value={testAmount}
+                        onChange={(e) => setTestAmount(parseFloat(e.target.value) || 0)}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="border rounded-lg p-4 mt-2">
+                      <p className="font-medium">Formatted Result:</p>
+                      <p className="text-xl mt-2">
+                        {getFormattedExample(testCurrency || selectedCurrency, testAmount)}
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Appearance</CardTitle>
@@ -135,235 +189,60 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="theme">Theme</Label>
-                <p className="text-sm text-muted-foreground">
-                  Select your preferred theme
-                </p>
-              </div>
-              <ModeToggle />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Location & Currency</CardTitle>
-            <CardDescription>
-              Set your country and currency preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="country">Country</Label>
-                <p className="text-sm text-muted-foreground">
-                  Select your country of residence
-                </p>
-              </div>
-              <Select
-                value={selectedCountry}
-                onValueChange={handleCountryChange}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="US">United States</SelectItem>
-                  <SelectItem value="CA">Canada</SelectItem>
-                  <SelectItem value="GB">United Kingdom</SelectItem>
-                  <SelectItem value="EU">European Union</SelectItem>
-                  <SelectItem value="AU">Australia</SelectItem>
-                  <SelectItem value="JP">Japan</SelectItem>
-                  <SelectItem value="IN">India</SelectItem>
-                  <SelectItem value="CN">China</SelectItem>
-                  <SelectItem value="BR">Brazil</SelectItem>
-                  <SelectItem value="RU">Russia</SelectItem>
-                  <SelectItem value="ZA">South Africa</SelectItem>
-                  <SelectItem value="NG">Nigeria</SelectItem>
-                  <SelectItem value="MX">Mexico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="currency">Currency</Label>
-                <p className="text-sm text-muted-foreground">
-                  Select your preferred currency
-                </p>
-              </div>
-              <Select
-                value={currency}
-                onValueChange={handleCurrencyChange}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">US Dollar ($)</SelectItem>
-                  <SelectItem value="EUR">Euro (€)</SelectItem>
-                  <SelectItem value="GBP">British Pound (£)</SelectItem>
-                  <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
-                  <SelectItem value="CAD">Canadian Dollar (C$)</SelectItem>
-                  <SelectItem value="AUD">Australian Dollar (A$)</SelectItem>
-                  <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
-                  <SelectItem value="CNY">Chinese Yuan (¥)</SelectItem>
-                  <SelectItem value="BRL">Brazilian Real (R$)</SelectItem>
-                  <SelectItem value="RUB">Russian Ruble (₽)</SelectItem>
-                  <SelectItem value="ZAR">South African Rand (R)</SelectItem>
-                  <SelectItem value="NGN">Nigerian Naira (₦)</SelectItem>
-                  <SelectItem value="MXN">Mexican Peso (Mex$)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={saveSettings} className="ml-auto">Save Location Settings</Button>
-          </CardFooter>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Security</CardTitle>
-            <CardDescription>
-              Manage your security and authentication settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="password-protection">Password Protection</Label>
-                <p className="text-sm text-muted-foreground">
-                  Require password to open the app
-                </p>
-              </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="dark-mode">Dark Mode</Label>
               <Switch
-                id="password-protection"
-                checked={requirePassword}
-                onCheckedChange={(checked) => {
-                  setRequirePassword(checked);
-                  toast({
-                    title: "Password protection updated",
-                    description: checked
-                      ? "Password protection enabled"
-                      : "Password protection disabled",
-                  });
-                }}
+                id="dark-mode"
+                checked={darkMode}
+                onCheckedChange={handleToggleDarkMode}
               />
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="two-factor">Two-Factor Authentication</Label>
-                <p className="text-sm text-muted-foreground">
-                  Add an extra layer of security
-                </p>
-              </div>
-              <Switch id="two-factor" />
-            </div>
-          </CardContent>
-        </Card>
-        
         <Card>
           <CardHeader>
-            <CardTitle>Notifications</CardTitle>
+            <CardTitle>Notification Settings</CardTitle>
             <CardDescription>
-              Configure how you receive notifications
+              Manage how and when you receive notifications
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="email-notifications">Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications via email
-                </p>
-              </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notifications">Enable Notifications</Label>
               <Switch
-                id="email-notifications"
-                checked={notifications.email}
-                onCheckedChange={() => handleNotificationChange("email")}
+                id="notifications"
+                checked={notifications}
+                onCheckedChange={handleToggleNotifications}
               />
             </div>
-            
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="app-notifications">App Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications within the app
-                </p>
-              </div>
-              <Switch
-                id="app-notifications"
-                checked={notifications.app}
-                onCheckedChange={() => handleNotificationChange("app")}
-              />
-            </div>
-            
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="weekly-report">Weekly Report</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive weekly financial summary
-                </p>
-              </div>
-              <Switch
-                id="weekly-report"
-                checked={notifications.weeklyReport}
-                onCheckedChange={() => handleNotificationChange("weeklyReport")}
-              />
-            </div>
-            
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="budget-alerts">Budget Limit Alerts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified when you approach budget limits
-                </p>
-              </div>
-              <Switch
-                id="budget-alerts"
-                checked={notifications.budgetAlerts}
-                onCheckedChange={() => handleNotificationChange("budgetAlerts")}
-              />
-            </div>
-            
-            <div className="flex flex-row items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="goal-progress">Goal Progress Updates</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified about your savings goals
-                </p>
-              </div>
-              <Switch
-                id="goal-progress"
-                checked={notifications.goalProgress}
-                onCheckedChange={() => handleNotificationChange("goalProgress")}
-              />
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="email-frequency">Email Frequency</Label>
+              <Select
+                value={emailFrequency}
+                onValueChange={setEmailFrequency}
+                disabled={!notifications}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Frequency</SelectLabel>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="never">Never</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button onClick={saveSettings} className="ml-auto">Save notification settings</Button>
-          </CardFooter>
         </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Manage your account settings and linked accounts
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button variant="outline">Connect Payment Account</Button>
-            <Button variant="destructive">Delete Account</Button>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={saveSettings} className="ml-auto">Save All Settings</Button>
-          </CardFooter>
-        </Card>
+
+        <div className="flex justify-end">
+          <Button onClick={handleSavePreferences}>Save Preferences</Button>
+        </div>
       </div>
     </div>
   );
