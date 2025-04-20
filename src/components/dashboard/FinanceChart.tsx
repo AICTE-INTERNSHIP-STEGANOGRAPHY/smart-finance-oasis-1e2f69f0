@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from "@/components/ThemeProvider";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface FinanceChartProps {
   title: string;
@@ -33,8 +34,9 @@ interface FinanceChartProps {
 
 export function FinanceChart({ title, description, data }: FinanceChartProps) {
   const { theme } = useTheme();
+  const { currency, currencySymbol } = useCurrency();
   const isDark = theme === "dark";
-  const [interval, setInterval] = useState("weekly");
+  const [interval, setInterval] = useState("monthly");
   
   const chartData = interval === "daily"
     ? data.slice(-7)
@@ -102,7 +104,7 @@ export function FinanceChart({ title, description, data }: FinanceChartProps) {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `${currencySymbol}${value}`}
                 tick={{ fill: isDark ? "#94a3b8" : "#64748b" }}
               />
               <Tooltip
@@ -117,7 +119,7 @@ export function FinanceChart({ title, description, data }: FinanceChartProps) {
                   fontWeight: "bold",
                   marginBottom: "0.25rem",
                 }}
-                formatter={(value: number) => [`$${value}`, ""]}
+                formatter={(value: number) => [`${currencySymbol}${value}`, ""]}
               />
               <Area
                 type="monotone"

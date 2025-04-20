@@ -67,9 +67,9 @@ export default function Suggestions() {
       const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
       const savingsGoals = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
       
-      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
-      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + inc.amount, 0);
-      const totalSavings = savingsGoals.reduce((sum: number, goal: any) => sum + goal.currentAmount, 0);
+      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || 0), 0);
+      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || 0), 0);
+      const totalSavings = savingsGoals.reduce((sum: number, goal: any) => sum + parseFloat(goal.currentAmount || 0), 0);
       
       // Generate personalized response based on user input and financial data
       let response = "";
@@ -81,17 +81,17 @@ export default function Suggestions() {
         } else {
           const topCategory = expenses
             .reduce((acc: Record<string, number>, exp: any) => {
-              acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+              acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount || 0);
               return acc;
             }, {});
           
-          const sortedCategories = Object.entries(topCategory).sort((a, b) => b[1] - a[1]);
+          const sortedCategories = Object.entries(topCategory).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
           const topSpending = sortedCategories[0];
           
           const expenseCategories = JSON.parse(localStorage.getItem("expenseCategories") || "[]");
           const topCategoryName = expenseCategories.find((cat: any) => cat.value === topSpending?.[0])?.label || topSpending?.[0];
           
-          response = `Based on your spending records, your highest expense category is ${topCategoryName} at ${formatMoney(topSpending?.[1] || 0, currency)}. This represents ${Math.round((topSpending?.[1] / totalExpenses) * 100)}% of your total expenses. Would you like some tips on how to reduce spending in this category?`;
+          response = `Based on your spending records, your highest expense category is ${topCategoryName} at ${formatMoney(topSpending?.[1] || 0, currency)}. This represents ${Math.round((parseFloat(String(topSpending?.[1])) / totalExpenses) * 100)}% of your total expenses. Would you like some tips on how to reduce spending in this category?`;
         }
       } 
       else if (query.includes("saving") || query.includes("save money")) {
@@ -120,17 +120,29 @@ export default function Suggestions() {
         response = "When managing debt, prioritize high-interest debts first while making minimum payments on others. Consider the debt avalanche method (focusing on highest interest rates) or the debt snowball method (tackling smallest debts first for psychological wins). If you have multiple high-interest debts, you might want to look into debt consolidation options.";
       }
       else if (query.includes("emergency fund") || query.includes("emergency savings")) {
-        const emergencyGoal = savingsGoals.find((goal: any) => goal.name.toLowerCase().includes("emergency") || goal.category === "emergency");
+        const emergencyGoal = savingsGoals.find((goal: any) => goal.name?.toLowerCase().includes("emergency") || goal.category === "emergency");
         
         if (emergencyGoal) {
-          const progress = Math.round((emergencyGoal.currentAmount / emergencyGoal.targetAmount) * 100);
-          response = `You have an emergency fund goal set up with ${formatMoney(emergencyGoal.currentAmount, currency)} saved so far (${progress}% of your ${formatMoney(emergencyGoal.targetAmount, currency)} target). Financial experts recommend having 3-6 months of essential expenses in your emergency fund.`;
+          const progress = Math.round((parseFloat(emergencyGoal.currentAmount || 0) / parseFloat(emergencyGoal.targetAmount || 1)) * 100);
+          response = `You have an emergency fund goal set up with ${formatMoney(parseFloat(emergencyGoal.currentAmount || 0), currency)} saved so far (${progress}% of your ${formatMoney(parseFloat(emergencyGoal.targetAmount || 0), currency)} target). Financial experts recommend having 3-6 months of essential expenses in your emergency fund.`;
         } else {
           response = "I don't see an emergency fund goal in your savings. It's recommended to have 3-6 months worth of essential expenses saved in an easily accessible account for unexpected situations. Would you like to set up an emergency fund goal?";
         }
       }
       else if (query.includes("how are you") || query.includes("hello") || query.includes("hi")) {
         response = "I'm doing well, thank you! I'm here to help you with any financial questions or guidance you need. What aspect of your finances would you like to discuss today?";
+      }
+      else if (query.includes("retirement") || query.includes("retire")) {
+        response = "Planning for retirement is crucial for long-term financial security. The general recommendation is to save 15-20% of your income for retirement. Consider utilizing tax-advantaged retirement accounts and diversifying your investments based on your age and risk tolerance. The earlier you start, the more you'll benefit from compound interest.";
+      }
+      else if (query.includes("tax") || query.includes("taxes")) {
+        response = "Tax planning can help you legally minimize your tax liability. Consider strategies such as maximizing contributions to tax-advantaged accounts, timing your income and deductions, and keeping track of potential tax credits and deductions relevant to your situation. It might be worth consulting with a tax professional for personalized advice.";
+      }
+      else if (query.includes("credit score") || query.includes("credit rating")) {
+        response = "Your credit score is important for obtaining favorable loan terms and interest rates. To maintain or improve your credit score: pay bills on time, keep credit card balances low, avoid opening too many new accounts, and regularly review your credit reports for errors. Aim for a credit utilization ratio below 30% of your available credit.";
+      }
+      else if (query.includes("insurance") || query.includes("insure")) {
+        response = "Insurance is a key component of financial planning. Consider health insurance, life insurance (especially if others depend on your income), property insurance, and liability coverage. Review your policies annually to ensure they still meet your needs and shop around to make sure you're getting competitive rates.";
       }
       else {
         response = "I'm here to provide financial insights based on your data. You can ask me about your spending patterns, savings strategies, budgeting tips, or how to reach your financial goals. What would you like to know?";
@@ -198,7 +210,7 @@ export default function Suggestions() {
         
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full pr-4 pl-4" ref={scrollRef}>
-            <div className="flex flex-col gap-4 pb-4">
+            <div className="flex flex-col gap-4 pb-4 pt-4">
               {messages.map((message) => (
                 <div 
                   key={message.id}

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { useCurrency, formatMoney } from "@/hooks/useCurrency";
 
 interface CategoryCardProps {
   title: string;
@@ -28,6 +29,8 @@ export function CategoryCard({
   className,
   bgColor,
 }: CategoryCardProps) {
+  const { currency } = useCurrency();
+  
   return (
     <Link to={path}>
       <Card className={cn("overflow-hidden transition-all hover:shadow-md", className)}>
@@ -44,7 +47,7 @@ export function CategoryCard({
           <div className="flex items-end justify-between">
             <div>
               <p className="text-2xl font-bold">
-                ${amount.toLocaleString()}
+                {formatMoney(amount, currency)}
               </p>
               {status && (
                 <Badge

@@ -1,11 +1,12 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useCurrency, formatMoney } from "@/hooks/useCurrency";
 
 interface ProgressCardProps {
   title: string;
-  value: number;
+  value: number | ((data: any[]) => number);
   target: number;
   icon?: ReactNode;
   className?: string;
@@ -20,7 +21,21 @@ export function ProgressCard({
   className,
   variant = "default",
 }: ProgressCardProps) {
-  const percentage = Math.round((value / target) * 100);
+  const { currency } = useCurrency();
+  const [calculatedValue, setCalculatedValue] = useState(0);
+  
+  useEffect(() => {
+    if (typeof value === 'function') {
+      // If value is a function, fetch data and calculate
+      const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
+      setCalculatedValue(value(expenses));
+    } else {
+      // If value is a number, use it directly
+      setCalculatedValue(value);
+    }
+  }, [value]);
+  
+  const percentage = Math.round((calculatedValue / target) * 100);
   
   const progressColor = 
     variant === "success" 
@@ -37,9 +52,9 @@ export function ProgressCard({
       </div>
       <div className="mb-2">
         <div className="flex items-center justify-between mb-1 text-sm">
-          <span>${value.toLocaleString()}</span>
+          <span>{formatMoney(calculatedValue, currency)}</span>
           <span className="text-muted-foreground">
-            ${target.toLocaleString()} ({percentage}%)
+            {formatMoney(target, currency)} ({percentage}%)
           </span>
         </div>
         <Progress value={percentage} className={cn("h-2", progressColor)} />
