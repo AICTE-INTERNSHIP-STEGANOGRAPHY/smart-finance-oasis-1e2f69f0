@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -31,11 +30,27 @@ export default function Settings() {
   
   const [selectedCountry, setSelectedCountry] = useState("US");
   
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem("notificationPreferences");
+    if (savedNotifications) {
+      setNotifications(JSON.parse(savedNotifications));
+    }
+    
+    const savedProfile = localStorage.getItem("userProfile");
+    if (savedProfile) {
+      const { country } = JSON.parse(savedProfile);
+      if (country) setSelectedCountry(country);
+    }
+  }, []);
+  
   const handleNotificationChange = (key: keyof typeof notifications) => {
-    setNotifications({
+    const updatedNotifications = {
       ...notifications,
       [key]: !notifications[key],
-    });
+    };
+    
+    setNotifications(updatedNotifications);
+    localStorage.setItem("notificationPreferences", JSON.stringify(updatedNotifications));
     
     toast({
       title: "Settings updated",
@@ -45,6 +60,14 @@ export default function Settings() {
 
   const handleCurrencyChange = (value: string) => {
     setCurrency(value);
+    
+    const savedProfile = localStorage.getItem("userProfile");
+    if (savedProfile) {
+      const profileData = JSON.parse(savedProfile);
+      profileData.currency = value;
+      localStorage.setItem("userProfile", JSON.stringify(profileData));
+    }
+    
     toast({
       title: "Currency updated",
       description: `Your currency has been changed to ${value}.`,
@@ -54,7 +77,13 @@ export default function Settings() {
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
     
-    // Automatically set currency based on country
+    const savedProfile = localStorage.getItem("userProfile");
+    if (savedProfile) {
+      const profileData = JSON.parse(savedProfile);
+      profileData.country = value;
+      localStorage.setItem("userProfile", JSON.stringify(profileData));
+    }
+    
     switch(value) {
       case "US": handleCurrencyChange("USD"); break;
       case "CA": handleCurrencyChange("CAD"); break;
@@ -75,6 +104,16 @@ export default function Settings() {
     toast({
       title: "Country updated",
       description: `Your country has been changed and currency updated accordingly.`,
+    });
+  };
+  
+  const saveSettings = () => {
+    localStorage.setItem("notificationPreferences", JSON.stringify(notifications));
+    setRequirePassword(requirePassword);
+    
+    toast({
+      title: "Settings saved",
+      description: "All your settings have been successfully saved.",
     });
   };
   
@@ -180,6 +219,9 @@ export default function Settings() {
               </Select>
             </div>
           </CardContent>
+          <CardFooter>
+            <Button onClick={saveSettings} className="ml-auto">Save Location Settings</Button>
+          </CardFooter>
         </Card>
         
         <Card>
@@ -303,7 +345,7 @@ export default function Settings() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="ml-auto">Save notification settings</Button>
+            <Button onClick={saveSettings} className="ml-auto">Save notification settings</Button>
           </CardFooter>
         </Card>
         
@@ -318,6 +360,9 @@ export default function Settings() {
             <Button variant="outline">Connect Payment Account</Button>
             <Button variant="destructive">Delete Account</Button>
           </CardContent>
+          <CardFooter>
+            <Button onClick={saveSettings} className="ml-auto">Save All Settings</Button>
+          </CardFooter>
         </Card>
       </div>
     </div>

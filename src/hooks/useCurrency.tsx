@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 type CurrencyContextType = {
   currency: string;
@@ -35,11 +35,25 @@ const currencySymbols: CurrencySymbols = {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider = ({ children }: CurrencyProviderProps) => {
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrencyState] = useState(() => {
+    // Try to get the currency from localStorage
+    const savedCurrency = localStorage.getItem("userCurrency");
+    return savedCurrency || "USD";
+  });
 
   const updateCurrency = (newCurrency: string) => {
-    setCurrency(newCurrency);
+    setCurrencyState(newCurrency);
+    // Save to localStorage
+    localStorage.setItem("userCurrency", newCurrency);
   };
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const savedCurrency = localStorage.getItem("userCurrency");
+    if (savedCurrency) {
+      setCurrencyState(savedCurrency);
+    }
+  }, []);
 
   const value = {
     currency,

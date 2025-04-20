@@ -12,11 +12,14 @@ import {
   DollarSign,
   Shield,
   CalendarCheck,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -26,6 +29,27 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Check for unread notifications
+  useEffect(() => {
+    const checkNotifications = () => {
+      const savedNotifications = localStorage.getItem("userNotifications");
+      if (savedNotifications) {
+        const notifications = JSON.parse(savedNotifications);
+        const unread = notifications.filter((n: any) => !n.read).length;
+        setUnreadCount(unread);
+      }
+    };
+    
+    // Check on mount and whenever location changes
+    checkNotifications();
+    
+    // Set up an interval to check periodically
+    const interval = setInterval(checkNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, [location.pathname]);
   
   const handleNavigation = (path: string) => {
     // Close sidebar on mobile when navigating
@@ -153,7 +177,26 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 >
                   <Link to="/suggestions" className="menu-item" onClick={() => handleNavigation("/suggestions")}>
                     <PieChart className="h-4 w-4" />
-                    Suggestions
+                    AI Finance Assistant
+                  </Link>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  asChild
+                  className={cn(
+                    "w-full justify-start relative",
+                    location.pathname === "/notifications" && "bg-accent font-medium"
+                  )}
+                >
+                  <Link to="/notifications" className="menu-item" onClick={() => handleNavigation("/notifications")}>
+                    <Bell className="h-4 w-4" />
+                    Notifications
+                    {unreadCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto">
+                        {unreadCount}
+                      </Badge>
+                    )}
                   </Link>
                 </Button>
               </div>

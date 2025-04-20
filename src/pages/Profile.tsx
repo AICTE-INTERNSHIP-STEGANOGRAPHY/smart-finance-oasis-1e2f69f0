@@ -1,8 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrency } from "@/hooks/useCurrency";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -11,13 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function Profile() {
   const { user } = useAuth();
+  const { currency, setCurrency } = useCurrency();
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
     occupation: "",
     country: "US",
-    currency: "USD",
+    currency: currency,
   });
+
+  // Load saved profile data from localStorage
+  useEffect(() => {
+    const savedProfile = localStorage.getItem("userProfile");
+    if (savedProfile) {
+      const parsedProfile = JSON.parse(savedProfile);
+      setProfileData(prevData => ({
+        ...prevData,
+        ...parsedProfile,
+        currency: currency // Ensure currency is in sync with context
+      }));
+    }
+  }, [currency]);
 
   const handleChange = (field: string, value: string) => {
     setProfileData({
@@ -26,7 +41,18 @@ export default function Profile() {
     });
   };
 
+  const handleCurrencyChange = (value: string) => {
+    setCurrency(value);
+    handleChange("currency", value);
+  };
+
   const handleSubmit = () => {
+    // Save to localStorage
+    localStorage.setItem("userProfile", JSON.stringify(profileData));
+    
+    // Update currency in context
+    setCurrency(profileData.currency);
+    
     toast({
       title: "Profile updated",
       description: "Your profile has been successfully updated.",
@@ -132,7 +158,7 @@ export default function Profile() {
               <Label htmlFor="currency">Currency</Label>
               <Select
                 value={profileData.currency}
-                onValueChange={(value) => handleChange("currency", value)}
+                onValueChange={handleCurrencyChange}
               >
                 <SelectTrigger id="currency">
                   <SelectValue placeholder="Select a currency" />

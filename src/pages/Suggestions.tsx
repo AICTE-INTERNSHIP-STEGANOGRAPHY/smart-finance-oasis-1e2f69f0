@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DollarSign } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface Suggestion {
   id: number;
@@ -23,11 +24,12 @@ interface Suggestion {
 }
 
 export default function Suggestions() {
+  const { currencySymbol } = useCurrency();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
     {
       id: 1,
-      message: "Welcome to Finance Suggestions! Ask me any finance-related question, and I'll provide personalized advice to help you manage your finances better.",
+      message: `Welcome to AI Finance Assistant! Ask me any finance-related question, and I'll provide personalized advice to help you manage your finances better. I can help with budgeting, saving strategies, or investment tips based on your financial goals.`,
       isUser: false,
       timestamp: new Date(),
     },
@@ -54,11 +56,11 @@ export default function Suggestions() {
     // Mock AI response after a short delay
     setTimeout(() => {
       const responses = [
-        "Based on your spending patterns, I've noticed you spend 30% of your income on food. Consider meal planning to reduce this to 15-20%, which could save you $200 monthly.",
-        "Looking at your recurring subscriptions, you could save $45 monthly by consolidating streaming services or using family plans.",
-        "Your savings rate is currently 10%. To reach financial independence faster, aim for 20-25% by automatically transferring funds on payday.",
-        "Consider investing in low-cost index funds for long-term wealth building. Starting with just $100 monthly could grow to $40,000+ over 15 years.",
-        "Your emergency fund covers 2 months of expenses. Financial experts recommend 3-6 months. Try increasing it by setting aside an extra $100 monthly."
+        `Based on your spending patterns, I've noticed you spend 30% of your income on food. Consider meal planning to reduce this to 15-20%, which could save you ${currencySymbol}200 monthly.`,
+        `Looking at your recurring subscriptions, you could save ${currencySymbol}45 monthly by consolidating streaming services or using family plans.`,
+        `Your savings rate is currently 10%. To reach financial independence faster, aim for 20-25% by automatically transferring funds on payday.`,
+        `Consider investing in low-cost index funds for long-term wealth building. Starting with just ${currencySymbol}100 monthly could grow to ${currencySymbol}40,000+ over 15 years.`,
+        `Your emergency fund covers 2 months of expenses. Financial experts recommend 3-6 months. Try increasing it by setting aside an extra ${currencySymbol}100 monthly.`
       ];
       
       const aiResponse: Suggestion = {
@@ -76,22 +78,22 @@ export default function Suggestions() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">AI Financial Suggestions</h1>
+        <h1 className="text-3xl font-bold tracking-tight">AI Finance Assistant</h1>
         <p className="text-muted-foreground">
           Get personalized financial advice and suggestions
         </p>
       </div>
       
       <Card className="flex-1 flex flex-col mt-6 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Finance Assistant</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle>Financial Assistant</CardTitle>
           <CardDescription>
             Ask any finance-related questions for personalized advice
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="flex-1 overflow-hidden">
-          <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+        <CardContent className="flex-1 overflow-hidden p-0">
+          <ScrollArea className="h-[calc(100vh-20rem)] p-4">
             <div className="space-y-4">
               {suggestions.map((suggestion) => (
                 <div
@@ -151,13 +153,14 @@ export default function Suggestions() {
           </ScrollArea>
         </CardContent>
         
-        <CardFooter>
+        <CardFooter className="pt-2">
           <form onSubmit={handleSubmit} className="flex w-full gap-2">
             <Textarea
               placeholder="Ask how to improve your finances..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 resize-none"
+              rows={2}
             />
             <Button type="submit" disabled={loading}>
               Send

@@ -20,6 +20,7 @@ import Savings from "./pages/Savings";
 import Goals from "./pages/Goals";
 import Profile from "./pages/Profile";
 import Security from "./pages/Security";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
                   <Route path="goals" element={<Goals />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="security" element={<Security />} />
+                  <Route path="notifications" element={<Notifications />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
