@@ -69,6 +69,7 @@ export default function Savings() {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [showImported, setShowImported] = useState(false);
   const [importableItems, setImportableItems] = useState<Array<{id: string, name: string, amount: number, category: string, source: 'income' | 'expenditure'}>>([]);
+  const [monthlyContribution, setMonthlyContribution] = useState(0);
 
   useEffect(() => {
     const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
@@ -133,6 +134,82 @@ export default function Savings() {
     
     checkGoalAchievements();
   }, [savingsGoals, currency]);
+
+  // Calculate monthly contribution correctly based on actual deposits
+  useEffect(() => {
+    const calculateMonthlyContribution = () => {
+      if (savingsGoals.length === 0) return 0;
+      
+      // Get the current date to determine the current month and year
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-based (January is 0)
+
+      // Calculate total savings in the current month
+      const currentMonthSavings = savingsGoals.reduce((total, goal) => {
+        // Get all transaction records if they exist
+        const transactionsKey = `transactions_savings_${goal.id}`;
+        const transactions = JSON.parse(localStorage.getItem(transactionsKey) || "[]");
+        
+        // Filter transactions for current month and sum them
+        const currentMonthTransactions = transactions.filter((t: any) => {
+          const date = new Date(t.date);
+          return date.getFullYear() === currentYear && date.getMonth() === currentMonth;
+        });
+
+        const monthTotal = currentMonthTransactions.reduce((sum: number, t: any) => sum + (parseFloat(t.amount) || 0), 0);
+        
+        // If no transactions for this goal in the current month, estimate based on current amount
+        if (monthTotal === 0 && goal.deadline) {
+          const deadlineDate = new Date(goal.deadline);
+          const monthsLeft = (deadlineDate.getFullYear() - now.getFullYear()) * 12 + 
+                            (deadlineDate.getMonth() - now.getMonth());
+                            
+          if (monthsLeft > 0) {
+            const requiredMonthlyAmount = (goal.targetAmount - goal.currentAmount) / monthsLeft;
+            return total + Math.max(0, requiredMonthlyAmount);
+          }
+        }
+        
+        return total + monthTotal;
+      }, 0);
+      
+      // If we have actual transactions for this month, use that value
+      if (currentMonthSavings > 0) {
+        return currentMonthSavings;
+      }
+      
+      // Fallback: calculate average monthly contribution across all time
+      const totalSaved = savingsGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+      
+      // Get all goals with deadlines and determine the total timespan
+      let earliestDate: Date | null = null;
+      
+      savingsGoals.forEach(goal => {
+        if (goal.deadline) {
+          const date = new Date(goal.deadline);
+          if (!earliestDate || date < earliestDate) {
+            earliestDate = date;
+          }
+        }
+      });
+      
+      // If we have at least one deadline, calculate average based on time period
+      if (earliestDate) {
+        const today = new Date();
+        const monthsPassed = (today.getFullYear() - earliestDate.getFullYear()) * 12 + 
+                           (today.getMonth() - earliestDate.getMonth()) + 1; // Add 1 to include current month
+        
+        return monthsPassed > 0 ? totalSaved / monthsPassed : totalSaved;
+      }
+      
+      // If no deadlines exist, use 6 months as default timespan for average
+      return totalSaved / 6;
+    };
+    
+    const calculatedMonthlyContribution = calculateMonthlyContribution();
+    setMonthlyContribution(calculatedMonthlyContribution);
+  }, [savingsGoals]);
   
   const handleAddGoal = () => {
     if (!newGoal.name || newGoal.targetAmount <= 0) {
@@ -305,15 +382,6 @@ export default function Savings() {
   const totalTarget = savingsGoals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const savingsRate = totalSaved > 0 && totalTarget > 0 
     ? Math.round((totalSaved / totalTarget) * 100) 
-    : 0;
-    
-  const monthlyContribution = savingsGoals.length > 0
-    ? totalSaved / savingsGoals.reduce((months, goal) => {
-        if (!goal.deadline) return months;
-        const date = new Date(goal.deadline);
-        const key = `${date.getFullYear()}-${date.getMonth()}`;
-        return months.has(key) ? months : months.add(key);
-      }, new Set<string>()).size || 0
     : 0;
     
   const goalsAchieved = savingsGoals.filter(goal => goal.isAchieved).length;

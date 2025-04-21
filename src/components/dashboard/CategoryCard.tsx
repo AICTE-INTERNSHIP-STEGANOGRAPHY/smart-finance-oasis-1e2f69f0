@@ -1,23 +1,23 @@
 
 import { ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { useCurrency, formatMoney } from "@/hooks/useCurrency";
+import { Link } from "react-router-dom";
+
+type StatusType = "success" | "warning" | "info";
 
 interface CategoryCardProps {
   title: string;
   icon: ReactNode;
   amount: number;
-  status?: {
-    type: "warning" | "success";
+  status: {
+    type: StatusType;
     label: string;
   };
   path: string;
-  className?: string;
   bgColor?: string;
+  displayValue?: string;
 }
 
 export function CategoryCard({
@@ -26,46 +26,40 @@ export function CategoryCard({
   amount,
   status,
   path,
-  className,
-  bgColor,
+  bgColor = "bg-muted",
+  displayValue,
 }: CategoryCardProps) {
   const { currency } = useCurrency();
   
+  const statusClasses = {
+    success: "text-finance-green",
+    warning: "text-finance-red",
+    info: "text-finance-blue"
+  };
+  
   return (
-    <Link to={path}>
-      <Card className={cn("overflow-hidden transition-all hover:shadow-md", className)}>
-        <div className={cn("h-2", bgColor)} />
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+    <div className="category-card rounded-lg border bg-card text-card-foreground shadow">
+      <div className="p-6 flex flex-col h-full justify-between">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className={`p-2 rounded-full ${bgColor}`}>
               {icon}
-            </div>
+            </span>
+            <h3 className="font-medium text-base tracking-tight">{title}</h3>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-2xl font-bold">
-                {formatMoney(amount, currency)}
-              </p>
-              {status && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "mt-2",
-                    status.type === "warning" ? "border-finance-red/50 bg-finance-red/10 text-finance-red" : 
-                    "border-finance-green/50 bg-finance-green/10 text-finance-green"
-                  )}
-                >
-                  {status.label}
-                </Badge>
-              )}
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+          <p className="text-2xl font-semibold">
+            {displayValue || formatMoney(amount, currency)}
+          </p>
+          <p className={`text-xs ${statusClasses[status.type]}`}>
+            {status.label}
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" className="mt-4 w-full justify-between" asChild>
+          <Link to={path}>
+            View {title.toLowerCase()} <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -183,10 +183,10 @@ export default function Dashboard() {
             title="Personal Goals"
             icon={<CalendarCheck className="h-4 w-4" />}
             amount={completedGoals}
-            displayValue={`${completedGoals}/${totalGoals}`}
             status={{ type: "success", label: "Goals completed" }}
             path="/goals"
             bgColor="bg-finance-purple"
+            displayValue={`${completedGoals}/${totalGoals}`}
           />
         </div>
       </div>
