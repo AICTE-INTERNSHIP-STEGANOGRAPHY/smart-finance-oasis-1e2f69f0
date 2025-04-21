@@ -1,258 +1,152 @@
-
-import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, ArrowUp } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useCurrency, formatMoney } from "@/hooks/useCurrency";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
 
-interface Message {
-  id: string;
-  content: string;
-  sender: "user" | "assistant";
-  timestamp: Date;
-}
+const Suggestions = () => {
+  const [suggestions, setSuggestions] = useState([
+    { id: 1, title: 'Invest in Stocks', description: 'Consider investing in stocks for long-term growth.', category: 'Financial' },
+    { id: 2, title: 'Learn a New Language', description: 'Learning a new language can open up new opportunities.', category: 'Personal Development' },
+  ]);
 
-export default function Suggestions() {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const savedMessages = localStorage.getItem("aiChatHistory");
-    return savedMessages 
-      ? JSON.parse(savedMessages) 
-      : [
-          {
-            id: "welcome",
-            content: "👋 Hello! I'm your AI Finance Assistant. I can help analyze your financial data and provide suggestions to improve your financial health. What would you like to know about your finances today?",
-            sender: "assistant",
-            timestamp: new Date()
-          }
-        ];
+  const [newSuggestion, setNewSuggestion] = useState({
+    title: '',
+    description: '',
+    category: 'Financial',
   });
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { currency } = useCurrency();
 
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    localStorage.setItem("aiChatHistory", JSON.stringify(messages));
-  }, [messages]);
+  const [categories, setCategories] = useState(['Financial', 'Personal Development', 'Career']);
 
-  // Get financial data for AI analysis
-  const getFinancialData = () => {
-    try {
-      const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
-      const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
-      const savings = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
-      
-      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + (inc.amount || 0), 0);
-      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-      const totalSaved = savings.reduce((sum: number, save: any) => sum + (save.currentAmount || 0), 0);
-      
-      const topExpenseCategory = expenses.length > 0 
-        ? Object.entries(
-            expenses.reduce((acc: Record<string, number>, exp: any) => {
-              acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
-              return acc;
-            }, {})
-          ).sort((a, b) => b[1] - a[1])[0]?.[0] || "none"
-        : "none";
-        
-      // Fix: Convert to number before division to ensure proper calculation
-      const savingsRate = totalIncome > 0 ? Math.round((totalSaved / totalIncome) * 100) : 0;
-      
-      return {
-        totalIncome,
-        totalExpenses,
-        totalSaved,
-        savingsRate,
-        topExpenseCategory,
-        numIncomes: incomes.length,
-        numExpenses: expenses.length,
-        numSavings: savings.length
-      };
-    } catch (error) {
-      console.error("Error processing financial data:", error);
-      return null;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, key: string) => {
+    setNewSuggestion({ ...newSuggestion, [key]: e.target.value });
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setNewSuggestion({ ...newSuggestion, category });
+  };
+
+  const addSuggestion = () => {
+    if (newSuggestion.title && newSuggestion.description && newSuggestion.category) {
+      setSuggestions([...suggestions, { ...newSuggestion, id: Date.now() }]);
+      setNewSuggestion({ title: '', description: '', category: 'Financial' });
     }
   };
 
-  // Generate AI response based on user input and financial data
-  const generateResponse = (userInput: string) => {
-    const financialData = getFinancialData();
-    
-    if (!financialData) {
-      return "I'm having trouble analyzing your financial data right now. Please try again later.";
-    }
-    
-    const { totalIncome, totalExpenses, totalSaved, savingsRate, topExpenseCategory, numIncomes, numExpenses } = financialData;
-    
-    // Basic income/expense analysis
-    if (userInput.toLowerCase().includes("income") || userInput.toLowerCase().includes("earn")) {
-      if (numIncomes === 0) {
-        return "You haven't recorded any income sources yet. Would you like to add some in the Earnings section?";
-      }
-      return `Based on your recorded data, your total income is ${formatMoney(totalIncome, currency)}. Would you like more detailed analysis on your income sources?`;
-    }
-    
-    if (userInput.toLowerCase().includes("expense") || userInput.toLowerCase().includes("spend")) {
-      if (numExpenses === 0) {
-        return "You haven't recorded any expenses yet. Would you like to add some in the Expenditures section?";
-      }
-      return `You've spent a total of ${formatMoney(totalExpenses, currency)}, with your highest spending in the ${topExpenseCategory} category. Would you like suggestions on how to reduce your expenses?`;
-    }
-    
-    if (userInput.toLowerCase().includes("save") || userInput.toLowerCase().includes("saving")) {
-      return `Your current savings amount to ${formatMoney(totalSaved, currency)}, which represents a ${savingsRate}% savings rate. Financial experts typically recommend saving at least 20% of your income.`;
-    }
-    
-    if (userInput.toLowerCase().includes("budget") || userInput.toLowerCase().includes("plan")) {
-      const remainingIncome = totalIncome - totalExpenses;
-      if (remainingIncome < 0) {
-        return `You're currently spending ${formatMoney(Math.abs(remainingIncome), currency)} more than you earn. I recommend reviewing your expenses to identify areas where you can cut back.`;
-      } else {
-        return `You have ${formatMoney(remainingIncome, currency)} remaining after expenses. Consider allocating this to your savings goals or investments.`;
-      }
-    }
-    
-    if (userInput.toLowerCase().includes("advice") || userInput.toLowerCase().includes("tip") || userInput.toLowerCase().includes("help")) {
-      if (totalExpenses > totalIncome) {
-        return "Your expenses exceed your income. Consider creating a budget to track and reduce spending, particularly in your highest spending category: " + topExpenseCategory;
-      } else if (savingsRate < 20) {
-        return "Your savings rate is currently " + savingsRate + "%. Consider increasing your savings to at least 20% of your income for better long-term financial health.";
-      } else {
-        return "You're doing well with your savings rate of " + savingsRate + "%! Consider exploring investment options for some of your savings to help them grow faster.";
-      }
-    }
-    
-    // Default responses
-    const defaultResponses = [
-      "I can help analyze your income, expenses, and savings. What specific aspect of your finances would you like to know about?",
-      "Would you like suggestions on how to improve your savings or reduce expenses?",
-      "I can provide insights on your spending patterns or savings rate. What would be most helpful?",
-      "I'm here to assist with your financial questions. Would you like to know more about your income breakdown or expense categories?"
-    ];
-    
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-  };
+  const totalSuggestions = suggestions.length;
+  const financialSuggestions = suggestions.filter(suggestion => suggestion.category === 'Financial').length;
+  const personalDevelopmentSuggestions = suggestions.filter(suggestion => suggestion.category === 'Personal Development').length;
+  const careerSuggestions = suggestions.filter(suggestion => suggestion.category === 'Career').length;
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
-    
-    // Add user message
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: input,
-      sender: "user",
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    
-    // Generate and add AI response after a short delay
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: crypto.randomUUID(),
-        content: generateResponse(input),
-        sender: "assistant",
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-    }, 500);
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const clearHistory = () => {
-    const initialMessage = {
-      id: "welcome",
-      content: "👋 Hello! I'm your AI Finance Assistant. I can help analyze your financial data and provide suggestions to improve your financial health. What would you like to know about your finances today?",
-      sender: "assistant" as "assistant",
-      timestamp: new Date()
-    };
-    
-    setMessages([initialMessage]);
-  };
+  const financialPercentage = totalSuggestions > 0 ? (financialSuggestions / totalSuggestions) * 100 : 0;
+  const personalDevelopmentPercentage = totalSuggestions > 0 ? (personalDevelopmentSuggestions / totalSuggestions) * 100 : 0;
+  const careerPercentage = totalSuggestions > 0 ? (careerSuggestions / totalSuggestions) * 100 : 0;
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold tracking-tight">AI Finance Assistant</h1>
-        <p className="text-muted-foreground">
-          Get personalized financial insights and suggestions
-        </p>
-      </div>
-      
-      <Card className="flex-1 overflow-hidden flex flex-col">
-        <CardHeader className="pb-2 border-b flex flex-row justify-between items-center">
-          <CardTitle className="flex items-center">
-            <Bot className="h-5 w-5 mr-2" />
-            AI Finance Assistant
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={clearHistory}>
-            Clear History
-          </Button>
-        </CardHeader>
-        <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div 
-                    className={`rounded-lg p-3 max-w-[80%] md:max-w-[70%] ${
-                      message.sender === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {message.sender === 'user' ? 
-                        <User className="h-4 w-4" /> : 
-                        <Bot className="h-4 w-4" />
-                      }
-                      <span className="text-xs">
-                        {message.sender === 'user' ? 'You' : 'AI Assistant'}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-          <div className="p-4 border-t">
-            <div className="flex items-center gap-2">
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Suggestions</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Suggestion</CardTitle>
+            <CardDescription>Add a new suggestion to the list</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="space-y-1">
+              <Label htmlFor="title">Title</Label>
               <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Ask about your finances..."
-                className="flex-1"
+                type="text"
+                id="title"
+                value={newSuggestion.title}
+                onChange={(e) => handleInputChange(e, 'title')}
+                placeholder="Enter title"
               />
-              <Button onClick={handleSendMessage} disabled={!input.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
+            <div className="space-y-1">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                type="text"
+                id="description"
+                value={newSuggestion.description}
+                onChange={(e) => handleInputChange(e, 'description')}
+                placeholder="Enter description"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="category">Category</Label>
+              <Select onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder={newSuggestion.category} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={addSuggestion}>Add Suggestion</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Breakdown</CardTitle>
+            <CardDescription>See the distribution of suggestions by category</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span>Financial</span>
+                <span>{financialSuggestions}</span>
+              </div>
+              <Progress value={financialPercentage} />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <span>Personal Development</span>
+                <span>{personalDevelopmentSuggestions}</span>
+              </div>
+              <Progress value={personalDevelopmentPercentage} />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <span>Career</span>
+                <span>{careerSuggestions}</span>
+              </div>
+              <Progress value={careerPercentage} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Suggestion List</CardTitle>
+          <CardDescription>List of all suggestions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-none space-y-2">
+            {suggestions.map(suggestion => (
+              <li key={suggestion.id} className="border p-2 rounded">
+                <h3 className="font-bold">{suggestion.title}</h3>
+                <p>{suggestion.description}</p>
+                <p className="text-sm">Category: {suggestion.category}</p>
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
     </div>
   );
-}
+};
+
+export default Suggestions;

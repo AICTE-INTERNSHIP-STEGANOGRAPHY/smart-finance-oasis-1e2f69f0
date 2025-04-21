@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Switch } from "@/components/ui/switch";
 import { useCurrency } from "@/hooks/useCurrency";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DatePicker } from "@/components/forms/DatePicker";
 
 type PersonalGoal = {
   id: string;
@@ -380,6 +382,117 @@ export default function Goals() {
               <Plus className="h-5 w-5" /> Add Personal Goal
             </Button>
           </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Add Personal Goal</DialogTitle>
+              <DialogDescription>
+                Describe the details of your personal goal below
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="import">Import from</Label>
+                <Select
+                  onValueChange={(value) => {
+                    const selectedItem = importableItems.find(item => `${item.source}-${item.id}` === value);
+                    if (selectedItem) {
+                      handleImportItem(selectedItem);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="import" className="h-12 text-base">
+                    <SelectValue placeholder="Select item to import (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Income Items</SelectLabel>
+                      {importableItems.filter(item => item.source === 'income').map(item => (
+                        <SelectItem key={`income-${item.id}`} value={`income-${item.id}`}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Expenditure Items</SelectLabel>
+                      {importableItems.filter(item => item.source === 'expenditure').map(item => (
+                        <SelectItem key={`expenditure-${item.id}`} value={`expenditure-${item.id}`}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Savings Items</SelectLabel>
+                      {importableItems.filter(item => item.source === 'savings').map(item => (
+                        <SelectItem key={`savings-${item.id}`} value={`savings-${item.id}`}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="name">Goal Name</Label>
+                <Input
+                  id="name"
+                  value={newGoal.name}
+                  onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                  className="h-12 text-base"
+                  autoComplete="off"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={newGoal.category}
+                  onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
+                >
+                  <SelectTrigger id="category" className="h-12 text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.item} value={category.item}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="deadline">Deadline (optional)</Label>
+                <DatePicker 
+                  date={newGoal.deadline ? new Date(newGoal.deadline) : undefined}
+                  setDate={(date) => setNewGoal({ ...newGoal, deadline: date ? date.toISOString() : undefined })}
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Input
+                  id="notes"
+                  value={newGoal.notes || ""}
+                  onChange={(e) => setNewGoal({ ...newGoal, notes: e.target.value })}
+                  className="h-12 text-base"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                onClick={handleAddGoal} 
+                disabled={isLoading}
+                className="w-full sm:w-auto h-12"
+              >
+                {isLoading ? "Processing..." : editingGoalId ? "Update Goal" : "Add Personal Goal"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </div>
       

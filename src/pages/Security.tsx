@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-// Import Eye/EyeOff icons for password show/hide
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Security() {
@@ -80,21 +79,26 @@ export default function Security() {
   const renderPasswordInput = (field: "current" | "new" | "confirm", label: string, id: string) => (
     <div className="space-y-2 relative">
       <Label htmlFor={id}>{label}</Label>
-      <input
-        id={id}
-        type={showPassword[field] ? "text" : "password"}
-        value={passwordForm[field]}
-        onChange={(e) => handlePasswordChange(field, e.target.value)}
-        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
-      />
-      <button
-        type="button"
-        className="absolute right-2 top-[38px] md:top-[32px] p-1 bg-background hover:bg-muted rounded"
-        tabIndex={-1}
-        onClick={() => setShowPassword({ ...showPassword, [field]: !showPassword[field] })}
-      >
-        {showPassword[field] ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-      </button>
+      <div className="relative">
+        <Input
+          id={id}
+          type={showPassword[field] ? "text" : "password"}
+          value={passwordForm[field]}
+          onChange={(e) => handlePasswordChange(field, e.target.value)}
+          className="pr-10"
+        />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-background hover:bg-muted rounded-full"
+          tabIndex={-1}
+          onClick={() => setShowPassword({ ...showPassword, [field]: !showPassword[field] })}
+        >
+          {showPassword[field] ? 
+            <EyeOff className="h-4 w-4 text-muted-foreground" /> : 
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          }
+        </button>
+      </div>
     </div>
   );
 
