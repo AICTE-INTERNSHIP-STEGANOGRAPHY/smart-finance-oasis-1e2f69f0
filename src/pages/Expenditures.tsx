@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency, formatMoney } from "@/hooks/useCurrency";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Expense = {
   id: string;
@@ -191,7 +192,7 @@ export default function Expenditures() {
     if (!newCategory.value || !newCategory.label) {
       toast({
         title: "Invalid category",
-        description: "Please provide both a value and label for the category.",
+        description: "Please provide both an item and label for the category.",
         variant: "destructive"
       });
       return;
@@ -201,7 +202,7 @@ export default function Expenditures() {
     if (categories.some(cat => cat.value === newCategory.value)) {
       toast({
         title: "Category already exists",
-        description: "A category with this value already exists.",
+        description: "A category with this item already exists.",
         variant: "destructive"
       });
       return;
@@ -499,20 +500,22 @@ export default function Expenditures() {
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium">Current Categories</h3>
-                    <div className="grid gap-2">
-                      {categories.map((category) => (
-                        <div key={category.value} className="flex justify-between items-center p-2 bg-muted rounded-md">
-                          <span>{category.label}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <ScrollArea className="h-[120px] rounded-md border">
+                      <div className="grid gap-2 p-2">
+                        {categories.map((category) => (
+                          <div key={category.value} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                            <span>{category.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-medium mb-2">Add New Category</h3>
-                    <div className="grid gap-2">
+                    <div className="grid gap-3">
                       <div className="grid grid-cols-4 items-center gap-2">
                         <Label htmlFor="categoryValue" className="text-right text-xs">
-                          Value
+                          Item
                         </Label>
                         <Input
                           id="categoryValue"
@@ -534,14 +537,15 @@ export default function Expenditures() {
                           placeholder="e.g. Grocery Shopping"
                         />
                       </div>
+                      <Button 
+                        onClick={handleAddCategory}
+                        className="w-full mt-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Category
+                      </Button>
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button onClick={handleAddCategory}>
-                    Add Category
-                  </Button>
-                </DialogFooter>
               </DialogContent>
             </Dialog>
           </CardFooter>

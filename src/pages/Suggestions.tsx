@@ -1,13 +1,10 @@
 
-import React, { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Send, Bot, User, ArrowUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Send, User, Bot, Calculator } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { useCurrency, formatMoney } from "@/hooks/useCurrency";
 
 interface Message {
@@ -18,35 +15,127 @@ interface Message {
 }
 
 export default function Suggestions() {
-  const { currency } = useCurrency();
-  const [input, setInput] = useState<string>("");
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>(() => {
-    const savedMessages = localStorage.getItem("aiAssistantMessages");
-    return savedMessages ? JSON.parse(savedMessages) : [
-      {
-        id: "welcome",
-        content: "Hello! I'm your AI Finance Assistant. How can I help you with your financial planning today?",
-        sender: "assistant",
-        timestamp: new Date()
-      }
-    ];
+    const savedMessages = localStorage.getItem("aiChatHistory");
+    return savedMessages 
+      ? JSON.parse(savedMessages) 
+      : [
+          {
+            id: "welcome",
+            content: "👋 Hello! I'm your AI Finance Assistant. I can help analyze your financial data and provide suggestions to improve your financial health. What would you like to know about your finances today?",
+            sender: "assistant",
+            timestamp: new Date()
+          }
+        ];
   });
-  
-  const scrollRef = useRef<HTMLDivElement>(null);
-  
-  // Scroll to bottom when messages change
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { currency } = useCurrency();
+
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    localStorage.setItem("aiChatHistory", JSON.stringify(messages));
+  }, [messages]);
+
+  // Get financial data for AI analysis
+  const getFinancialData = () => {
+    try {
+      const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
+      const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
+      const savings = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
+      
+      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + (inc.amount || 0), 0);
+      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+      const totalSaved = savings.reduce((sum: number, save: any) => sum + (save.currentAmount || 0), 0);
+      
+      const topExpenseCategory = expenses.length > 0 
+        ? Object.entries(
+            expenses.reduce((acc: Record<string, number>, exp: any) => {
+              acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+              return acc;
+            }, {})
+          ).sort((a, b) => b[1] - a[1])[0]?.[0] || "none"
+        : "none";
+        
+      const savingsRate = totalIncome > 0 ? Math.round((totalSaved / totalIncome) * 100) : 0;
+      
+      return {
+        totalIncome,
+        totalExpenses,
+        totalSaved,
+        savingsRate,
+        topExpenseCategory,
+        numIncomes: incomes.length,
+        numExpenses: expenses.length,
+        numSavings: savings.length
+      };
+    } catch (error) {
+      console.error("Error processing financial data:", error);
+      return null;
     }
-  }, [messages]);
-  
-  // Save messages to localStorage
-  useEffect(() => {
-    localStorage.setItem("aiAssistantMessages", JSON.stringify(messages));
-  }, [messages]);
-  
-  const handleSend = () => {
+  };
+
+  // Generate AI response based on user input and financial data
+  const generateResponse = (userInput: string) => {
+    const financialData = getFinancialData();
+    
+    if (!financialData) {
+      return "I'm having trouble analyzing your financial data right now. Please try again later.";
+    }
+    
+    const { totalIncome, totalExpenses, totalSaved, savingsRate, topExpenseCategory, numIncomes, numExpenses } = financialData;
+    
+    // Basic income/expense analysis
+    if (userInput.toLowerCase().includes("income") || userInput.toLowerCase().includes("earn")) {
+      if (numIncomes === 0) {
+        return "You haven't recorded any income sources yet. Would you like to add some in the Earnings section?";
+      }
+      return `Based on your recorded data, your total income is ${formatMoney(totalIncome, currency)}. Would you like more detailed analysis on your income sources?`;
+    }
+    
+    if (userInput.toLowerCase().includes("expense") || userInput.toLowerCase().includes("spend")) {
+      if (numExpenses === 0) {
+        return "You haven't recorded any expenses yet. Would you like to add some in the Expenditures section?";
+      }
+      return `You've spent a total of ${formatMoney(totalExpenses, currency)}, with your highest spending in the ${topExpenseCategory} category. Would you like suggestions on how to reduce your expenses?`;
+    }
+    
+    if (userInput.toLowerCase().includes("save") || userInput.toLowerCase().includes("saving")) {
+      return `Your current savings amount to ${formatMoney(totalSaved, currency)}, which represents a ${savingsRate}% savings rate. Financial experts typically recommend saving at least 20% of your income.`;
+    }
+    
+    if (userInput.toLowerCase().includes("budget") || userInput.toLowerCase().includes("plan")) {
+      const remainingIncome = totalIncome - totalExpenses;
+      if (remainingIncome < 0) {
+        return `You're currently spending ${formatMoney(Math.abs(remainingIncome), currency)} more than you earn. I recommend reviewing your expenses to identify areas where you can cut back.`;
+      } else {
+        return `You have ${formatMoney(remainingIncome, currency)} remaining after expenses. Consider allocating this to your savings goals or investments.`;
+      }
+    }
+    
+    if (userInput.toLowerCase().includes("advice") || userInput.toLowerCase().includes("tip") || userInput.toLowerCase().includes("help")) {
+      if (totalExpenses > totalIncome) {
+        return "Your expenses exceed your income. Consider creating a budget to track and reduce spending, particularly in your highest spending category: " + topExpenseCategory;
+      } else if (savingsRate < 20) {
+        return "Your savings rate is currently " + savingsRate + "%. Consider increasing your savings to at least 20% of your income for better long-term financial health.";
+      } else {
+        return "You're doing well with your savings rate of " + savingsRate + "%! Consider exploring investment options for some of your savings to help them grow faster.";
+      }
+    }
+    
+    // Default responses
+    const defaultResponses = [
+      "I can help analyze your income, expenses, and savings. What specific aspect of your finances would you like to know about?",
+      "Would you like suggestions on how to improve your savings or reduce expenses?",
+      "I can provide insights on your spending patterns or savings rate. What would be most helpful?",
+      "I'm here to assist with your financial questions. Would you like to know more about your income breakdown or expense categories?"
+    ];
+    
+    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+  };
+
+  const handleSendMessage = () => {
     if (!input.trim()) return;
     
     // Add user message
@@ -60,234 +149,108 @@ export default function Suggestions() {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     
-    // Simulate AI thinking
+    // Generate and add AI response after a short delay
     setTimeout(() => {
-      // Get financial data for context
-      const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
-      const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
-      const savingsGoals = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
-      const personalGoals = JSON.parse(localStorage.getItem("userPersonalGoals") || "[]");
-      
-      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || '0'), 0);
-      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || '0'), 0);
-      const totalSavings = savingsGoals.reduce((sum: number, goal: any) => sum + parseFloat(goal.currentAmount || '0'), 0);
-      
-      // Generate personalized response based on user input and financial data
-      let response = "";
-      const query = input.toLowerCase();
-      
-      if (query.includes("budget") || query.includes("spending")) {
-        if (expenses.length === 0) {
-          response = "You haven't recorded any expenses yet. Start by adding your expenses in the Expenditures section to get insights on your spending habits.";
-        } else {
-          const topCategory = expenses
-            .reduce((acc: Record<string, number>, exp: any) => {
-              acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount || '0');
-              return acc;
-            }, {});
-          
-          const sortedCategories = Object.entries(topCategory).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
-          const topSpending = sortedCategories[0];
-          
-          const expenseCategories = JSON.parse(localStorage.getItem("expenseCategories") || "[]");
-          const topCategoryName = expenseCategories.find((cat: any) => cat.value === topSpending?.[0])?.label || topSpending?.[0];
-          
-          response = `Based on your spending records, your highest expense category is ${topCategoryName} at ${formatMoney(topSpending?.[1] || 0, currency)}. This represents ${Math.round(((topSpending?.[1] || 0) / totalExpenses) * 100)}% of your total expenses. Would you like some tips on how to reduce spending in this category?`;
-        }
-      } 
-      else if (query.includes("saving") || query.includes("save money")) {
-        if (totalIncome === 0) {
-          response = "I don't see any income records yet. Add your income sources first, so I can help you create a saving plan.";
-        } else if (totalExpenses === 0) {
-          response = "You haven't recorded any expenses yet. To give you personalized saving advice, I need to understand your spending patterns.";
-        } else {
-          const savingRate = Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
-          
-          if (savingRate < 0) {
-            response = `Currently, you're spending more than you earn. Your expenses exceed your income by ${formatMoney(Math.abs(totalIncome - totalExpenses), currency)}. I recommend reviewing your expenses and identifying non-essential items you can cut back on.`;
-          } else if (savingRate < 10) {
-            response = `Your current saving rate is ${savingRate}%, which is a start but could be improved. Financial experts typically recommend saving at least 20% of your income. Try to identify areas where you can reduce spending to increase your savings.`;
-          } else if (savingRate < 20) {
-            response = `Your saving rate is ${savingRate}%, which is good but could be better. Consider setting up automatic transfers to a dedicated savings account to reach the recommended 20% saving rate.`;
-          } else {
-            response = `Excellent! You're saving ${savingRate}% of your income, which exceeds the recommended 20%. You're on a great path toward financial security. Consider investing some of your savings for long-term growth.`;
-          }
-        }
-      }
-      else if (query.includes("invest") || query.includes("investment")) {
-        response = "Before making investment decisions, it's important to consider your financial goals, time horizon, and risk tolerance. As a general rule, it's advisable to have an emergency fund covering 3-6 months of expenses before starting to invest. Consider diversifying your investments across different asset classes such as stocks, bonds, and perhaps index funds for long-term growth.";
-      }
-      else if (query.includes("debt") || query.includes("loan")) {
-        response = "When managing debt, prioritize high-interest debts first while making minimum payments on others. Consider the debt avalanche method (focusing on highest interest rates) or the debt snowball method (tackling smallest debts first for psychological wins). If you have multiple high-interest debts, you might want to look into debt consolidation options.";
-      }
-      else if (query.includes("emergency fund") || query.includes("emergency savings")) {
-        const emergencyGoal = savingsGoals.find((goal: any) => goal.name?.toLowerCase().includes("emergency") || goal.category === "emergency");
-        
-        if (emergencyGoal) {
-          const progress = Math.round((parseFloat(emergencyGoal.currentAmount || '0') / parseFloat(emergencyGoal.targetAmount || '1')) * 100);
-          response = `You have an emergency fund goal set up with ${formatMoney(parseFloat(emergencyGoal.currentAmount || '0'), currency)} saved so far (${progress}% of your ${formatMoney(parseFloat(emergencyGoal.targetAmount || '0'), currency)} target). Financial experts recommend having 3-6 months of essential expenses in your emergency fund.`;
-        } else {
-          response = "I don't see an emergency fund goal in your savings. It's recommended to have 3-6 months worth of essential expenses saved in an easily accessible account for unexpected situations. Would you like to set up an emergency fund goal?";
-        }
-      }
-      else if (query.includes("how are you") || query.includes("hello") || query.includes("hi")) {
-        response = "I'm doing well, thank you! I'm here to help you with any financial questions or guidance you need. What aspect of your finances would you like to discuss today?";
-      }
-      else if (query.includes("retirement") || query.includes("retire")) {
-        response = "Planning for retirement is crucial for long-term financial security. The general recommendation is to save 15-20% of your income for retirement. Consider utilizing tax-advantaged retirement accounts and diversifying your investments based on your age and risk tolerance. The earlier you start, the more you'll benefit from compound interest.";
-      }
-      else if (query.includes("tax") || query.includes("taxes")) {
-        response = "Tax planning can help you legally minimize your tax liability. Consider strategies such as maximizing contributions to tax-advantaged accounts, timing your income and deductions, and keeping track of potential tax credits and deductions relevant to your situation. It might be worth consulting with a tax professional for personalized advice.";
-      }
-      else if (query.includes("credit score") || query.includes("credit rating")) {
-        response = "Your credit score is important for obtaining favorable loan terms and interest rates. To maintain or improve your credit score: pay bills on time, keep credit card balances low, avoid opening too many new accounts, and regularly review your credit reports for errors. Aim for a credit utilization ratio below 30% of your available credit.";
-      }
-      else if (query.includes("insurance") || query.includes("insure")) {
-        response = "Insurance is a key component of financial planning. Consider health insurance, life insurance (especially if others depend on your income), property insurance, and liability coverage. Review your policies annually to ensure they still meet your needs and shop around to make sure you're getting competitive rates.";
-      }
-      else if (query.includes("financial goals") || query.includes("goals")) {
-        const completedGoals = personalGoals.filter((goal: any) => goal.completed).length;
-        const totalGoals = personalGoals.length;
-        
-        if (totalGoals === 0) {
-          response = "I don't see any personal goals set up yet. Setting specific, measurable, achievable, relevant, and time-bound (SMART) financial goals can help guide your financial decisions and measure your progress. Would you like some suggestions for financial goals?";
-        } else {
-          response = `You have ${completedGoals} completed goals out of ${totalGoals} total goals (${Math.round((completedGoals/totalGoals) * 100)}% completion rate). Keep working towards your goals systematically and celebrate each achievement along the way.`;
-        }
-      }
-      else if (query.includes("income") || query.includes("earn")) {
-        if (incomes.length === 0) {
-          response = "You haven't recorded any income sources yet. Add your income details in the Earnings section to get a complete picture of your financial situation.";
-        } else {
-          const monthlyIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || '0'), 0);
-          response = `Based on your records, your total monthly income is ${formatMoney(monthlyIncome, currency)}. Having multiple income streams can provide financial stability. Consider exploring additional income opportunities if possible, such as freelancing, investments, or side businesses.`;
-        }
-      }
-      else if (query.includes("expense") || query.includes("spend")) {
-        if (expenses.length === 0) {
-          response = "You haven't recorded any expenses yet. Track your expenses in the Expenditures section to better understand your spending habits and identify areas for potential savings.";
-        } else {
-          const monthlyExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || '0'), 0);
-          response = `Based on your records, your total monthly expenses are ${formatMoney(monthlyExpenses, currency)}. The 50/30/20 rule suggests allocating 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. How does your current spending align with this guideline?`;
-        }
-      }
-      else {
-        response = "I'm here to provide financial insights based on your data. You can ask me about your spending patterns, savings strategies, budgeting tips, or how to reach your financial goals. What would you like to know specifically about your finances?";
-      }
-      
-      // Add AI response
-      const assistantMessage: Message = {
+      const aiResponse: Message = {
         id: crypto.randomUUID(),
-        content: response,
+        content: generateResponse(input),
         sender: "assistant",
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
-    }, 1000);
+      setMessages(prev => [...prev, aiResponse]);
+    }, 500);
   };
-  
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
     }
   };
-  
-  const clearConversation = () => {
-    const welcomeMessage = {
+
+  const clearHistory = () => {
+    const initialMessage = {
       id: "welcome",
-      content: "Hello! I'm your AI Finance Assistant. How can I help you with your financial planning today?",
-      sender: "assistant",
+      content: "👋 Hello! I'm your AI Finance Assistant. I can help analyze your financial data and provide suggestions to improve your financial health. What would you like to know about your finances today?",
+      sender: "assistant" as "assistant",
       timestamp: new Date()
     };
     
-    setMessages([welcomeMessage]);
-    toast({
-      title: "Conversation cleared",
-      description: "Your chat history has been reset."
-    });
+    setMessages([initialMessage]);
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-60px)]">
-      <div className="mb-2">
+    <div className="h-[calc(100vh-6rem)] flex flex-col">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold tracking-tight">AI Finance Assistant</h1>
         <p className="text-muted-foreground">
-          Get personalized financial advice based on your data
+          Get personalized financial insights and suggestions
         </p>
       </div>
       
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
-              <CardTitle>Finance Assistant</CardTitle>
-            </div>
-            <Button variant="outline" size="sm" onClick={clearConversation}>
-              Clear conversation
-            </Button>
-          </div>
-          <CardDescription>
-            Ask questions about your spending, savings, and financial goals
-          </CardDescription>
-          <Separator />
+      <Card className="flex-1 overflow-hidden flex flex-col">
+        <CardHeader className="pb-2 border-b flex flex-row justify-between items-center">
+          <CardTitle className="flex items-center">
+            <Bot className="h-5 w-5 mr-2" />
+            AI Finance Assistant
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={clearHistory}>
+            Clear History
+          </Button>
         </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-full pr-4 pl-4" ref={scrollRef}>
-            <div className="flex flex-col gap-4 pb-4 pt-4">
+        <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
               {messages.map((message) => (
                 <div 
-                  key={message.id}
+                  key={message.id} 
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`flex gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <Avatar className={`h-8 w-8 ${message.sender === 'user' ? 'bg-primary' : 'bg-muted'}`}>
-                      {message.sender === 'user' ? (
-                        <>
-                          <AvatarFallback>U</AvatarFallback>
-                          <User className="h-5 w-5 text-primary-foreground" />
-                        </>
-                      ) : (
-                        <>
-                          <AvatarFallback>AI</AvatarFallback>
-                          <Bot className="h-5 w-5 text-muted-foreground" />
-                        </>
-                      )}
-                    </Avatar>
-                    <div className={`rounded-lg p-3 ${
+                  <div 
+                    className={`rounded-lg p-3 max-w-[80%] md:max-w-[70%] ${
                       message.sender === 'user' 
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground' 
                         : 'bg-muted'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs mt-1 opacity-70">
-                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {message.sender === 'user' ? 
+                        <User className="h-4 w-4" /> : 
+                        <Bot className="h-4 w-4" />
+                      }
+                      <span className="text-xs">
+                        {message.sender === 'user' ? 'You' : 'AI Assistant'}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
                     </div>
+                    <p className="whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
-        </CardContent>
-        
-        <CardFooter className="pt-3 border-t bg-card">
-          <div className="flex w-full items-center gap-2">
-            <Input 
-              placeholder="Ask about your finances..." 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1"
-            />
-            <Button type="submit" size="icon" onClick={handleSend} disabled={!input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
+          <div className="p-4 border-t">
+            <div className="flex items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Ask about your finances..."
+                className="flex-1"
+              />
+              <Button onClick={handleSendMessage} disabled={!input.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );
