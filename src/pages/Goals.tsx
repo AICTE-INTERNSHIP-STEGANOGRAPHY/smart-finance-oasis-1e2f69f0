@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -43,16 +42,27 @@ export default function Goals() {
     importedFrom: undefined
   });
   
-  const [categories, setCategories] = useState<Array<{value: string, label: string}>>(() => {
+  const [categories, setCategories] = useState<Array<{item: string, label: string}>>(() => {
     const savedCategories = localStorage.getItem("goalCategories");
-    return savedCategories ? JSON.parse(savedCategories) : [
-      { value: "financial", label: "Financial" },
-      { value: "career", label: "Career" },
-      { value: "education", label: "Education" },
-      { value: "health", label: "Health & Fitness" },
-      { value: "personal", label: "Personal Development" },
-      { value: "family", label: "Family" },
-      { value: "other", label: "Other" }
+    // migrate 'value' to 'item' if needed
+    if (savedCategories) {
+      let arr: Array<any> = JSON.parse(savedCategories);
+      // migrate possible 'value' to 'item'
+      arr = arr.map((cat) =>
+        cat.item
+          ? cat
+          : { item: cat.value || '', label: cat.label }
+      );
+      return arr;
+    }
+    return [
+      { item: "financial", label: "Financial" },
+      { item: "career", label: "Career" },
+      { item: "education", label: "Education" },
+      { item: "health", label: "Health & Fitness" },
+      { item: "personal", label: "Personal Development" },
+      { item: "family", label: "Family" },
+      { item: "other", label: "Other" }
     ];
   });
   
@@ -60,7 +70,7 @@ export default function Goals() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState({ value: "", label: "" });
+  const [newCategory, setNewCategory] = useState<{ item: string, label: string }>({ item: "", label: "" });
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [showImported, setShowImported] = useState(false);
   const [importableItems, setImportableItems] = useState<Array<{id: string, name: string, category: string, source: 'income' | 'expenditure' | 'savings'}>>([]);
@@ -303,35 +313,31 @@ export default function Goals() {
   };
   
   const handleAddCategory = () => {
-    if (!newCategory.value || !newCategory.label) {
+    if (!newCategory.item || !newCategory.label) {
       toast({
         title: "Invalid category",
-        description: "Please provide both a value and label for the category.",
+        description: "Please provide both an item and label for the category.",
         variant: "destructive"
       });
       return;
     }
-    
     // Check if category already exists
-    if (categories.some(cat => cat.value === newCategory.value)) {
+    if (categories.some(cat => cat.item === newCategory.item)) {
       toast({
         title: "Category already exists",
-        description: "A category with this value already exists.",
+        description: "A category with this item already exists.",
         variant: "destructive"
       });
       return;
     }
-    
     const updatedCategories = [...categories, newCategory];
     setCategories(updatedCategories);
     localStorage.setItem("goalCategories", JSON.stringify(updatedCategories));
-    
     toast({
       title: "Category added",
       description: "Your new goal category has been added."
     });
-    
-    setNewCategory({ value: "", label: "" });
+    setNewCategory({ item: "", label: "" });
     setIsCategoryDialogOpen(false);
   };
   
@@ -436,11 +442,11 @@ export default function Goals() {
           {goals.length > 0 ? (
             <div className="space-y-4">
               {categories.map((category) => {
-                const categoryGoals = goals.filter(goal => goal.category === category.value);
+                const categoryGoals = goals.filter(goal => goal.category === category.item);
                 if (categoryGoals.length === 0) return null;
                 
                 return (
-                  <div key={category.value}>
+                  <div key={category.item}>
                     <h3 className="font-medium mb-2">{category.label} Goals</h3>
                     <div className="pl-6 space-y-2">
                       {categoryGoals.map((goal) => (
@@ -488,136 +494,79 @@ export default function Goals() {
             <p>You haven't created any personal goals yet. Start by creating your first one.</p>
           )}
           
-          <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Create New Goal
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+          <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+            <DialogContent className="sm:max-w-[525px]">
               <DialogHeader>
-                <DialogTitle>{editingGoalId ? "Edit Goal" : "Create New Goal"}</DialogTitle>
+                <DialogTitle>Manage Goal Categories</DialogTitle>
                 <DialogDescription>
-                  {showImported 
-                    ? "This goal is linked to another entry in your finances"
-                    : "Set your personal goal and track your progress"}
+                  Add or modify goal categories
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="flex items-center gap-4">
-                  <Label htmlFor="imported" className="text-right">
-                    Import from:
-                  </Label>
-                  <Select onValueChange={(value) => {
-                    const selected = importableItems.find(item => item.id === value);
-                    if (selected) handleImportItem(selected);
-                  }}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select an item to import" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Income Goals</SelectLabel>
-                        {importableItems
-                          .filter(item => item.source === 'income')
-                          .map(item => (
-                            <SelectItem key={`income-${item.id}`} value={item.id}>
-                              {item.name}
-                            </SelectItem>
-                          ))
-                        }
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Expense Budgets</SelectLabel>
-                        {importableItems
-                          .filter(item => item.source === 'expenditure')
-                          .map(item => (
-                            <SelectItem key={`expense-${item.id}`} value={item.id}>
-                              {item.name}
-                            </SelectItem>
-                          ))
-                        }
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Savings Goals</SelectLabel>
-                        {importableItems
-                          .filter(item => item.source === 'savings')
-                          .map(item => (
-                            <SelectItem key={`savings-${item.id}`} value={item.id}>
-                              {item.name}
-                            </SelectItem>
-                          ))
-                        }
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Goal Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newGoal.name}
-                    onChange={(e) => setNewGoal({...newGoal, name: e.target.value})}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">
-                    Category
-                  </Label>
-                  <Select 
-                    value={newGoal.category}
-                    onValueChange={(value) => setNewGoal({...newGoal, category: value})}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Current Categories</h3>
+                  <div
+                    className="max-h-32 overflow-y-auto bg-muted rounded-md border p-2"
+                    style={{
+                      minHeight: "48px", // At least a few rows tall
+                      resize: "vertical"
+                    }}
                   >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Categories</SelectLabel>
+                    {categories.length > 0 ? (
+                      <div className="flex flex-col gap-2">
                         {categories.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            {category.label}
-                          </SelectItem>
+                          <div key={category.item} className="flex justify-between items-center p-2 bg-background rounded">
+                            <span>{category.label}</span>
+                          </div>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground text-center">No categories defined.</div>
+                    )}
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="deadline" className="text-right">
-                    Deadline
-                  </Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    value={newGoal.deadline || ""}
-                    onChange={(e) => setNewGoal({...newGoal, deadline: e.target.value || undefined})}
-                    className="col-span-3"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="notes" className="text-right">
-                    Notes
-                  </Label>
-                  <Input
-                    id="notes"
-                    value={newGoal.notes || ""}
-                    onChange={(e) => setNewGoal({...newGoal, notes: e.target.value})}
-                    className="col-span-3"
-                    placeholder="Optional"
-                  />
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium mb-2">Add New Category</h3>
+                  <div className="grid gap-4 p-4 bg-background rounded-lg shadow-sm" style={{ minHeight: 120 }}>
+                    <div className="grid grid-cols-4 items-center gap-2">
+                      <Label htmlFor="categoryItem" className="text-right text-xs">
+                        Item
+                      </Label>
+                      <Input
+                        id="categoryItem"
+                        value={newCategory.item ?? ""}
+                        onChange={(e) => setNewCategory({ ...newCategory, item: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                        className="col-span-3 h-12 text-base"
+                        placeholder="e.g. health"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2">
+                      <Label htmlFor="categoryLabel" className="text-right text-xs">
+                        Label
+                      </Label>
+                      <Input
+                        id="categoryLabel"
+                        value={newCategory.label}
+                        onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+                        className="col-span-3 h-12 text-base"
+                        placeholder="e.g. Health Goals"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="flex justify-end col-span-4 mt-2">
+                      <Button
+                        onClick={handleAddCategory}
+                        className="w-full sm:w-auto h-12 mt-1 bg-primary text-primary-foreground"
+                        size="lg"
+                        type="button"
+                      >
+                        Add Category
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleAddGoal} disabled={isLoading}>
-                  {isLoading ? "Saving..." : (editingGoalId ? "Save Changes" : "Create Goal")}
-                </Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
           
@@ -651,7 +600,7 @@ export default function Goals() {
                   <h3 className="text-sm font-medium">Current Categories</h3>
                   <div className="grid gap-2">
                     {categories.map((category) => (
-                      <div key={category.value} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                      <div key={category.item} className="flex justify-between items-center p-2 bg-muted rounded-md">
                         <span>{category.label}</span>
                       </div>
                     ))}
@@ -666,8 +615,8 @@ export default function Goals() {
                       </Label>
                       <Input
                         id="categoryValue"
-                        value={newCategory.value}
-                        onChange={(e) => setNewCategory({...newCategory, value: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                        value={newCategory.item}
+                        onChange={(e) => setNewCategory({...newCategory, item: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
                         className="col-span-3"
                         placeholder="e.g. health"
                       />
