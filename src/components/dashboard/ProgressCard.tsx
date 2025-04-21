@@ -35,7 +35,7 @@ export function ProgressCard({
     }
   }, [value]);
   
-  const percentage = Math.round((calculatedValue / target) * 100);
+  const percentage = target > 0 ? Math.round((calculatedValue / target) * 100) : 0;
   
   const progressColor = 
     variant === "success" 

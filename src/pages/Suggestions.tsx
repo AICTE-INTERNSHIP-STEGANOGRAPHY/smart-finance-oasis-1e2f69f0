@@ -66,10 +66,11 @@ export default function Suggestions() {
       const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
       const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
       const savingsGoals = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
+      const personalGoals = JSON.parse(localStorage.getItem("userPersonalGoals") || "[]");
       
-      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || 0), 0);
-      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || 0), 0);
-      const totalSavings = savingsGoals.reduce((sum: number, goal: any) => sum + parseFloat(goal.currentAmount || 0), 0);
+      const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || '0'), 0);
+      const totalIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || '0'), 0);
+      const totalSavings = savingsGoals.reduce((sum: number, goal: any) => sum + parseFloat(goal.currentAmount || '0'), 0);
       
       // Generate personalized response based on user input and financial data
       let response = "";
@@ -81,7 +82,7 @@ export default function Suggestions() {
         } else {
           const topCategory = expenses
             .reduce((acc: Record<string, number>, exp: any) => {
-              acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount || 0);
+              acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount || '0');
               return acc;
             }, {});
           
@@ -91,7 +92,7 @@ export default function Suggestions() {
           const expenseCategories = JSON.parse(localStorage.getItem("expenseCategories") || "[]");
           const topCategoryName = expenseCategories.find((cat: any) => cat.value === topSpending?.[0])?.label || topSpending?.[0];
           
-          response = `Based on your spending records, your highest expense category is ${topCategoryName} at ${formatMoney(topSpending?.[1] || 0, currency)}. This represents ${Math.round((parseFloat(String(topSpending?.[1])) / totalExpenses) * 100)}% of your total expenses. Would you like some tips on how to reduce spending in this category?`;
+          response = `Based on your spending records, your highest expense category is ${topCategoryName} at ${formatMoney(topSpending?.[1] || 0, currency)}. This represents ${Math.round(((topSpending?.[1] || 0) / totalExpenses) * 100)}% of your total expenses. Would you like some tips on how to reduce spending in this category?`;
         }
       } 
       else if (query.includes("saving") || query.includes("save money")) {
@@ -123,8 +124,8 @@ export default function Suggestions() {
         const emergencyGoal = savingsGoals.find((goal: any) => goal.name?.toLowerCase().includes("emergency") || goal.category === "emergency");
         
         if (emergencyGoal) {
-          const progress = Math.round((parseFloat(emergencyGoal.currentAmount || 0) / parseFloat(emergencyGoal.targetAmount || 1)) * 100);
-          response = `You have an emergency fund goal set up with ${formatMoney(parseFloat(emergencyGoal.currentAmount || 0), currency)} saved so far (${progress}% of your ${formatMoney(parseFloat(emergencyGoal.targetAmount || 0), currency)} target). Financial experts recommend having 3-6 months of essential expenses in your emergency fund.`;
+          const progress = Math.round((parseFloat(emergencyGoal.currentAmount || '0') / parseFloat(emergencyGoal.targetAmount || '1')) * 100);
+          response = `You have an emergency fund goal set up with ${formatMoney(parseFloat(emergencyGoal.currentAmount || '0'), currency)} saved so far (${progress}% of your ${formatMoney(parseFloat(emergencyGoal.targetAmount || '0'), currency)} target). Financial experts recommend having 3-6 months of essential expenses in your emergency fund.`;
         } else {
           response = "I don't see an emergency fund goal in your savings. It's recommended to have 3-6 months worth of essential expenses saved in an easily accessible account for unexpected situations. Would you like to set up an emergency fund goal?";
         }
@@ -144,8 +145,34 @@ export default function Suggestions() {
       else if (query.includes("insurance") || query.includes("insure")) {
         response = "Insurance is a key component of financial planning. Consider health insurance, life insurance (especially if others depend on your income), property insurance, and liability coverage. Review your policies annually to ensure they still meet your needs and shop around to make sure you're getting competitive rates.";
       }
+      else if (query.includes("financial goals") || query.includes("goals")) {
+        const completedGoals = personalGoals.filter((goal: any) => goal.completed).length;
+        const totalGoals = personalGoals.length;
+        
+        if (totalGoals === 0) {
+          response = "I don't see any personal goals set up yet. Setting specific, measurable, achievable, relevant, and time-bound (SMART) financial goals can help guide your financial decisions and measure your progress. Would you like some suggestions for financial goals?";
+        } else {
+          response = `You have ${completedGoals} completed goals out of ${totalGoals} total goals (${Math.round((completedGoals/totalGoals) * 100)}% completion rate). Keep working towards your goals systematically and celebrate each achievement along the way.`;
+        }
+      }
+      else if (query.includes("income") || query.includes("earn")) {
+        if (incomes.length === 0) {
+          response = "You haven't recorded any income sources yet. Add your income details in the Earnings section to get a complete picture of your financial situation.";
+        } else {
+          const monthlyIncome = incomes.reduce((sum: number, inc: any) => sum + parseFloat(inc.amount || '0'), 0);
+          response = `Based on your records, your total monthly income is ${formatMoney(monthlyIncome, currency)}. Having multiple income streams can provide financial stability. Consider exploring additional income opportunities if possible, such as freelancing, investments, or side businesses.`;
+        }
+      }
+      else if (query.includes("expense") || query.includes("spend")) {
+        if (expenses.length === 0) {
+          response = "You haven't recorded any expenses yet. Track your expenses in the Expenditures section to better understand your spending habits and identify areas for potential savings.";
+        } else {
+          const monthlyExpenses = expenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount || '0'), 0);
+          response = `Based on your records, your total monthly expenses are ${formatMoney(monthlyExpenses, currency)}. The 50/30/20 rule suggests allocating 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. How does your current spending align with this guideline?`;
+        }
+      }
       else {
-        response = "I'm here to provide financial insights based on your data. You can ask me about your spending patterns, savings strategies, budgeting tips, or how to reach your financial goals. What would you like to know?";
+        response = "I'm here to provide financial insights based on your data. You can ask me about your spending patterns, savings strategies, budgeting tips, or how to reach your financial goals. What would you like to know specifically about your finances?";
       }
       
       // Add AI response
@@ -183,8 +210,8 @@ export default function Suggestions() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)]">
-      <div className="mb-4">
+    <div className="flex flex-col h-[calc(100vh-60px)]">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold tracking-tight">AI Finance Assistant</h1>
         <p className="text-muted-foreground">
           Get personalized financial advice based on your data
@@ -192,7 +219,7 @@ export default function Suggestions() {
       </div>
       
       <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />

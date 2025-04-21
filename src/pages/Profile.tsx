@@ -19,6 +19,7 @@ export default function Profile() {
     occupation: "",
     country: "US",
     currency: currency,
+    password: "",
   });
 
   // Load saved profile data from localStorage
@@ -109,6 +110,17 @@ export default function Profile() {
                 id="occupation"
                 value={profileData.occupation}
                 onChange={(e) => handleChange("occupation", e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                showPasswordToggle
+                value={profileData.password}
+                onChange={(e) => handleChange("password", e.target.value)}
               />
             </div>
           </CardContent>

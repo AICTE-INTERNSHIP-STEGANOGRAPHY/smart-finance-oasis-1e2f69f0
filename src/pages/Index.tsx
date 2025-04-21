@@ -1,9 +1,9 @@
 
 import { Navigate } from "react-router-dom";
 
-// This is just a redirect page to the dashboard
+// This is a redirect page to the AI Finance Assistant
 const Index = () => {
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/suggestions" replace />;
 };
 
 export default Index;

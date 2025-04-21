@@ -6,7 +6,6 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { FinanceChart } from "@/components/dashboard/FinanceChart";
 import { DatePickerWithRange } from "@/components/forms/DatePickerWithRange";
-import { ProgressCard } from "@/components/dashboard/ProgressCard";
 import { useCurrency, formatMoney } from "@/hooks/useCurrency";
 
 export default function Dashboard() {
@@ -21,6 +20,8 @@ export default function Dashboard() {
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
   const [monthlySavings, setMonthlySavings] = useState(0);
+  const [completedGoals, setCompletedGoals] = useState(0);
+  const [totalGoals, setTotalGoals] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
   
   // Fetch data from local storage
@@ -41,11 +42,17 @@ export default function Dashboard() {
     const totalBalance = totalIncome - totalExpenses;
     const totalSavings = savingsGoals.reduce((sum: number, item: any) => sum + parseFloat(item.currentAmount || 0), 0);
     
+    // Calculate completed and total personal goals
+    const completedPersonalGoals = personalGoals.filter((goal: any) => goal.completed).length;
+    const totalPersonalGoals = personalGoals.length;
+    
     // Update state
     setBalance(totalBalance);
     setMonthlyIncome(totalIncome);
     setMonthlyExpenses(totalExpenses);
     setMonthlySavings(totalSavings);
+    setCompletedGoals(completedPersonalGoals);
+    setTotalGoals(totalPersonalGoals);
     
     // Generate chart data
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -175,37 +182,13 @@ export default function Dashboard() {
           <CategoryCard
             title="Personal Goals"
             icon={<CalendarCheck className="h-4 w-4" />}
-            amount={0}
+            amount={completedGoals}
+            displayValue={`${completedGoals}/${totalGoals}`}
+            status={{ type: "success", label: "Goals completed" }}
             path="/goals"
             bgColor="bg-finance-purple"
           />
         </div>
-      </div>
-      
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ProgressCard
-          title="Monthly Savings Goal"
-          value={monthlySavings}
-          target={monthlyIncome * 0.2} // Common financial advice: save 20% of income
-          icon={<Wallet className="h-4 w-4" />}
-          variant={monthlySavings >= monthlyIncome * 0.2 ? "success" : "default"}
-        />
-        <ProgressCard
-          title="Emergency Fund"
-          value={monthlySavings}
-          target={monthlyExpenses * 6} // Common financial advice: 6 months of expenses
-          icon={<Wallet className="h-4 w-4" />}
-          variant="default"
-        />
-        <ProgressCard
-          title="Entertainment Budget"
-          value={expenses => expenses
-            .filter((expense: any) => expense.category === "entertainment")
-            .reduce((sum: number, expense: any) => sum + parseFloat(expense.amount || 0), 0)}
-          target={monthlyIncome * 0.1} // Example: 10% of income for entertainment
-          icon={<CreditCard className="h-4 w-4" />}
-          variant="warning"
-        />
       </div>
     </div>
   );
