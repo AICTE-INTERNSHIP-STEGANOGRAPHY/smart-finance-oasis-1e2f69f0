@@ -47,6 +47,8 @@ This application has been created keeping in mind the tight and stressful schedu
 
 ## SCREENSHOTS 
 
+
+
 ![Screenshot_2025-04-21_21-54-27](https://github.com/user-attachments/assets/51291771-b624-4b7d-b8b0-ef3594ded6b3)
 ![Screenshot_2025-04-21_21-53-21](https://github.com/user-attachments/assets/d244fb78-e9b2-4cc7-82c1-b7ef6c98735e)
 ![Screenshot_2025-04-21_21-53-14](https://github.com/user-attachments/assets/69dd7107-991d-4eb8-93ed-c0f0edf47d37)
