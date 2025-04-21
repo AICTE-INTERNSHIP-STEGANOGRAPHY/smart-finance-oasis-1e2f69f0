@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -509,7 +510,7 @@ export default function Savings() {
                       value={newGoal.currentAmount}
                       onChange={(e) => setNewGoal({...newGoal, currentAmount: parseFloat(e.target.value) || 0})}
                       className="pl-8"
-                      readOnly={showImported}
+                      /* Remove the readOnly attribute to make the field always responsive */
                     />
                   </div>
                 </div>

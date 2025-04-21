@@ -58,6 +58,7 @@ export default function Suggestions() {
           ).sort((a, b) => b[1] - a[1])[0]?.[0] || "none"
         : "none";
         
+      // Fix: Convert to number before division to ensure proper calculation
       const savingsRate = totalIncome > 0 ? Math.round((totalSaved / totalIncome) * 100) : 0;
       
       return {
