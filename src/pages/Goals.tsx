@@ -44,10 +44,8 @@ export default function Goals() {
   
   const [categories, setCategories] = useState<Array<{item: string, label: string}>>(() => {
     const savedCategories = localStorage.getItem("goalCategories");
-    // migrate 'value' to 'item' if needed
     if (savedCategories) {
       let arr: Array<any> = JSON.parse(savedCategories);
-      // migrate possible 'value' to 'item'
       arr = arr.map((cat) =>
         cat.item
           ? cat
@@ -75,7 +73,6 @@ export default function Goals() {
   const [showImported, setShowImported] = useState(false);
   const [importableItems, setImportableItems] = useState<Array<{id: string, name: string, category: string, source: 'income' | 'expenditure' | 'savings'}>>([]);
 
-  // Load importable items
   useEffect(() => {
     const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
     const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
@@ -105,23 +102,19 @@ export default function Goals() {
     setImportableItems(importable);
   }, [isGoalDialogOpen]);
 
-  // Sync with other categories
   useEffect(() => {
     const syncImportedGoals = () => {
-      // Get latest data
       const incomes = JSON.parse(localStorage.getItem("userIncomes") || "[]");
       const expenses = JSON.parse(localStorage.getItem("userExpenses") || "[]");
       const savings = JSON.parse(localStorage.getItem("userSavingsGoals") || "[]");
       
       let updated = false;
       
-      // Update goals based on imported sources
       const updatedGoals = goals.map(goal => {
         if (!goal.importedFrom) return goal;
         
         let sourceItem;
         
-        // Find the source item
         if (goal.importedFrom.source === 'income') {
           sourceItem = incomes.find((inc: any) => inc.id === goal.importedFrom?.id);
           if (sourceItem?.exceedsGoal && !goal.completed) {
@@ -151,7 +144,6 @@ export default function Goals() {
         setGoals(updatedGoals);
         localStorage.setItem("userPersonalGoals", JSON.stringify(updatedGoals));
         
-        // Create notification
         const notification = {
           id: crypto.randomUUID(),
           type: "success",
@@ -167,11 +159,9 @@ export default function Goals() {
       }
     };
     
-    // Run sync on mount
     syncImportedGoals();
     
-    // Set up a periodic check
-    const interval = setInterval(syncImportedGoals, 60000); // Check every minute
+    const interval = setInterval(syncImportedGoals, 60000);
     
     return () => clearInterval(interval);
   }, [goals]);
@@ -185,7 +175,6 @@ export default function Goals() {
     localStorage.setItem("userPersonalGoals", JSON.stringify(updatedGoals));
     
     if (completed) {
-      // Create notification
       const goalName = goals.find(g => g.id === id)?.name || "Goal";
       const notification = {
         id: crypto.randomUUID(),
@@ -223,7 +212,6 @@ export default function Goals() {
     let goal: PersonalGoal;
     
     if (editingGoalId) {
-      // Update existing goal
       const updatedGoals = goals.map(g => 
         g.id === editingGoalId 
           ? {
@@ -244,7 +232,6 @@ export default function Goals() {
         description: "Your personal goal has been successfully updated."
       });
     } else {
-      // Add new goal
       goal = {
         ...newGoal,
         id: crypto.randomUUID(),
@@ -321,7 +308,6 @@ export default function Goals() {
       });
       return;
     }
-    // Check if category already exists
     if (categories.some(cat => cat.item === newCategory.item)) {
       toast({
         title: "Category already exists",
@@ -362,23 +348,39 @@ export default function Goals() {
   const activeGoals = goals.filter(goal => !goal.completed).length;
   const completedGoals = goals.filter(goal => goal.completed).length;
   
-  // Count upcoming deadlines
   const now = new Date();
   const upcomingDeadlines = goals.filter(goal => {
     if (!goal.deadline || goal.completed) return false;
     const deadlineDate = new Date(goal.deadline);
     const timeDiff = deadlineDate.getTime() - now.getTime();
     const daysDiff = timeDiff / (1000 * 3600 * 24);
-    return daysDiff >= 0 && daysDiff <= 7; // within a week
+    return daysDiff >= 0 && daysDiff <= 7;
   }).length;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Personal Goals</h1>
-        <p className="text-muted-foreground">
-          Set and track your financial goals
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Personal Goals</h1>
+          <p className="text-muted-foreground">
+            Set and track your financial goals
+          </p>
+        </div>
+        <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="default"
+              className="flex items-center gap-2 px-6 py-3 text-base"
+              onClick={() => {
+                resetGoalForm();
+                setEditingGoalId(null);
+                setIsGoalDialogOpen(true);
+              }}
+            >
+              <Plus className="h-5 w-5" /> Add Personal Goal
+            </Button>
+          </DialogTrigger>
+        </Dialog>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -495,7 +497,7 @@ export default function Goals() {
           )}
           
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-            <DialogContent className="sm:max-w-[525px]">
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Manage Goal Categories</DialogTitle>
                 <DialogDescription>
@@ -506,16 +508,12 @@ export default function Goals() {
                 <div>
                   <h3 className="text-sm font-medium mb-2">Current Categories</h3>
                   <div
-                    className="max-h-32 overflow-y-auto bg-muted rounded-md border p-2"
-                    style={{
-                      minHeight: "48px", // At least a few rows tall
-                      resize: "vertical"
-                    }}
+                    className="max-h-32 h-32 overflow-y-auto bg-muted rounded-md border p-2"
                   >
                     {categories.length > 0 ? (
                       <div className="flex flex-col gap-2">
                         {categories.map((category) => (
-                          <div key={category.item} className="flex justify-between items-center p-2 bg-background rounded">
+                          <div key={category.item} className="flex justify-between items-center p-2 bg-background rounded min-h-[32px]">
                             <span>{category.label}</span>
                           </div>
                         ))}
@@ -527,7 +525,7 @@ export default function Goals() {
                 </div>
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-medium mb-2">Add New Category</h3>
-                  <div className="grid gap-4 p-4 bg-background rounded-lg shadow-sm" style={{ minHeight: 120 }}>
+                  <div className="grid gap-4 p-6 bg-background rounded-lg shadow-sm" style={{ minHeight: 160 }}>
                     <div className="grid grid-cols-4 items-center gap-2">
                       <Label htmlFor="categoryItem" className="text-right text-xs">
                         Item
@@ -586,63 +584,6 @@ export default function Goals() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
-          <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Manage Goal Categories</DialogTitle>
-                <DialogDescription>
-                  Add or modify goal categories
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Current Categories</h3>
-                  <div className="grid gap-2">
-                    {categories.map((category) => (
-                      <div key={category.item} className="flex justify-between items-center p-2 bg-muted rounded-md">
-                        <span>{category.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Add New Category</h3>
-                  <div className="grid gap-2">
-                    <div className="grid grid-cols-4 items-center gap-2">
-                      <Label htmlFor="categoryValue" className="text-right text-xs">
-                        Value
-                      </Label>
-                      <Input
-                        id="categoryValue"
-                        value={newCategory.item}
-                        onChange={(e) => setNewCategory({...newCategory, item: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
-                        className="col-span-3"
-                        placeholder="e.g. health"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-2">
-                      <Label htmlFor="categoryLabel" className="text-right text-xs">
-                        Label
-                      </Label>
-                      <Input
-                        id="categoryLabel"
-                        value={newCategory.label}
-                        onChange={(e) => setNewCategory({...newCategory, label: e.target.value})}
-                        className="col-span-3"
-                        placeholder="e.g. Health Goals"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddCategory}>
-                  Add Category
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </CardContent>
       </Card>
     </div>

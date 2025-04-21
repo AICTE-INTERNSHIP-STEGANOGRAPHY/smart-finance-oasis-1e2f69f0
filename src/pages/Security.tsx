@@ -6,12 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+// Import Eye/EyeOff icons for password show/hide
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Security() {
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     new: "",
     confirm: ""
+  });
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false
   });
   const [securitySettings, setSecuritySettings] = useState({
     twoFactor: false,
@@ -69,6 +76,28 @@ export default function Security() {
     });
   };
 
+  // Utility function for password input with show/hide toggle
+  const renderPasswordInput = (field: "current" | "new" | "confirm", label: string, id: string) => (
+    <div className="space-y-2 relative">
+      <Label htmlFor={id}>{label}</Label>
+      <input
+        id={id}
+        type={showPassword[field] ? "text" : "password"}
+        value={passwordForm[field]}
+        onChange={(e) => handlePasswordChange(field, e.target.value)}
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+      />
+      <button
+        type="button"
+        className="absolute right-2 top-[38px] md:top-[32px] p-1 bg-background hover:bg-muted rounded"
+        tabIndex={-1}
+        onClick={() => setShowPassword({ ...showPassword, [field]: !showPassword[field] })}
+      >
+        {showPassword[field] ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -87,35 +116,9 @@ export default function Security() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Current Password</Label>
-              <Input
-                id="current-password"
-                type="password"
-                value={passwordForm.current}
-                onChange={(e) => handlePasswordChange("current", e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={passwordForm.new}
-                onChange={(e) => handlePasswordChange("new", e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={passwordForm.confirm}
-                onChange={(e) => handlePasswordChange("confirm", e.target.value)}
-              />
-            </div>
+            {renderPasswordInput("current", "Current Password", "current-password")}
+            {renderPasswordInput("new", "New Password", "new-password")}
+            {renderPasswordInput("confirm", "Confirm New Password", "confirm-password")}
           </CardContent>
           <CardFooter>
             <Button onClick={handlePasswordSubmit}>Update Password</Button>
