@@ -10,6 +10,14 @@ Website link: https://envisage.org.in/[https://envisage.org.in/]
 This web and mobile application was created for the event of HACK-UR-WAY under the fest ENVISAGE 2025. 
 
 
+## TEAM 
+#### TEAM NAME: Team Power TMSL
+• ANKIT GHOSH (LEADER)
+• ATREYEE  BANERJEE 
+• SNEHA MAITY 
+• PRIYADARSHINY DAS
+
+
 ## PROBLEM STATEMENT
 
 Problem code:   WEB-002 (Personal Finance Buddy). 
