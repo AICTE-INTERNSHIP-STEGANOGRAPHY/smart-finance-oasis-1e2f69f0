@@ -12,9 +12,12 @@ This web and mobile application was created for the event of HACK-UR-WAY under t
 
 ## TEAM 
 #### TEAM NAME: Team Power TMSL
-• ANKIT GHOSH (LEADER)
+• ANKITA GHOSH (LEADER)
+
 • ATREYEE  BANERJEE 
+
 • SNEHA MAITY 
+
 • PRIYADARSHINY DAS
 
 
