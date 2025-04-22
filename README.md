@@ -17,12 +17,16 @@ Problem code:   WEB-002 (Personal Finance Buddy).
 Problem statement: Priya, a college student on a tight budget, struggles to manage her monthly expenses. With limited income from allowances or part-time jobs, she finds it hard to track spending, often overspends, and rarely saves for personal goals—like buying a concert ticket. She needs a simple, smart solution to monitor her expenses, categorize spending, and get personalized money- saving tips. The goal is to build a personal finance assistant that helps students like Priya take control of their finances through features like budget tracking, goal setting, smart insights, and spending alerts— making money management easier and more effective. 
 
 
-### WEB APPLICATION LINK 
+## WEB APPLICATION LINK 
 [SMART FINANCE OASIS](https://preview--smart-finance-oasis.lovable.app/login) 
 
 
-### YOUTUBE VIDEO LINK
+## YOUTUBE VIDEO LINK
 [SMART FINANCE OASIS- explanatory video](https://youtu.be/vXNFzABnuhQ?si=yjdLVUAVMrsi9uww) 
+
+
+## GOOGLE DRIVE LINK FOR PRESENTATION
+[SMART FINANCE OASIS.ppt](https://drive.google.com/drive/folders/14-OqJ_XsYuts4WCBiplLkp2__kIbYG-x)
 
 
 ## FEATURES
