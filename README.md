@@ -5,7 +5,7 @@ Finance-management and budget-tracking application
 
 ## ENVISAGE 2025 
 
-Website link: [https://envisage.org.in/]
+Website link: https://envisage.org.in/[https://envisage.org.in/]
 
 This web and mobile application was created for the event of HACK-UR-WAY under the fest ENVISAGE 2025. 
 
@@ -18,11 +18,11 @@ Problem statement: Priya, a college student on a tight budget, struggles to mana
 
 
 ### WEB APPLICATION LINK 
-[SMART FINANCE OASIS](https://youtu.be/vXNFzABnuhQ?si=yjdLVUAVMrsi9uww) 
+[SMART FINANCE OASIS](https://preview--smart-finance-oasis.lovable.app/login) 
 
 
 ### YOUTUBE VIDEO LINK
-[SMART FINANCE OASIS- explanatory video](https://preview--smart-finance-oasis.lovable.app/login) 
+[SMART FINANCE OASIS- explanatory video](https://youtu.be/vXNFzABnuhQ?si=yjdLVUAVMrsi9uww) 
 
 
 ## FEATURES
